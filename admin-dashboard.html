@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Admin Dashboard</title>
+    <!-- Bootstrap CSS -->
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <!-- Font Awesome -->
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    />
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+      document.addEventListener("DOMContentLoaded", function () {
+        document.querySelectorAll(".sidebar .nav-item.dropdown > a").forEach((item) => {
+          item.addEventListener("click", function (e) {
+            e.preventDefault(); // Prevent default link behavior
+            let parent = this.parentElement;
+            parent.classList.toggle("show");
+    
+            // Close other open dropdowns
+            document.querySelectorAll(".sidebar .nav-item.dropdown").forEach((dropdown) => {
+              if (dropdown !== parent) {
+                dropdown.classList.remove("show");
+              }
+            });
+          });
+        });
+      });
+    </script>
+    
+    <style>
+      :root {
+        --primary-color: #4e73df;
+        --secondary-color: #858796;
+        --success-color: #1cc88a;
+        --info-color: #36b9cc;
+        --warning-color: #f6c23e;
+        --danger-color: #e74a3b;
+      }
+
+      body {
+        background-color: #f8f9fc;
+      }
+
+      .sidebar {
+        min-height: 100vh;
+        background: linear-gradient(
+          180deg,
+          var(--primary-color) 10%,
+          #224abe 100%
+        );
+        color: white;
+        position: fixed;
+        width: 250px;
+        z-index: 1000;
+      }
+
+      .sidebar .nav-link {
+        color: rgba(255, 255, 255, 0.8);
+        padding: 1rem;
+        margin: 0.2rem 1rem;
+        border-radius: 5px;
+        transition: all 0.3s;
+      }
+
+      .sidebar .nav-link:hover,
+      .sidebar .nav-link.active {
+        color: white;
+        background-color: rgba(255, 255, 255, 0.1);
+      }
+
+      .sidebar .nav-link i {
+        margin-right: 0.5rem;
+        width: 1.5rem;
+        text-align: center;
+      }
+
+      .main-content {
+        margin-left: 250px;
+        padding: 2rem;
+      }
+
+      .topbar {
+        background-color: white;
+        box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15);
+        padding: 1rem;
+        margin-bottom: 2rem;
+      }
+
+      .card {
+        box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15);
+        margin-bottom: 1.5rem;
+      }
+
+      .notification-badge {
+        position: absolute;
+        top: -5px;
+        right: -5px;
+        padding: 3px 6px;
+        border-radius: 50%;
+        background: var(--danger-color);
+        color: white;
+        font-size: 0.7rem;
+      }
+
+      .activity-log {
+        max-height: 400px;
+        overflow-y: auto;
+      }
+      q1 + .activity-item {
+        padding: 0.75rem;
+        border-left: 4px solid var(--primary-color);
+        margin-bottom: 0.5rem;
+        background-color: #f8f9fc;
+      }
+
+      .chart-container {
+        height: 300px;
+      }
+
+      .table-responsive {
+        max-height: 400px;
+        overflow-y: auto;
+      }
+      
+      /* Ensure dropdown stays within the sidebar */
+.sidebar .nav-item {
+  position: relative;
+}
+
+/* Style dropdown menu */
+.sidebar .dropdown-menu {
+  position: static !important; /* Prevents floating */
+  display: none; /* Hide initially */
+  background-color: rgba(255, 255, 255, 0.1);
+  border-radius: 5px;
+  padding: 5px 10px;
+  box-shadow: none; /* Remove unnecessary shadow */
+}
+
+/* Show dropdown on parent click */
+.sidebar .nav-item.show .dropdown-menu {
+  display: block;
+}
+
+/* Dropdown items styling */
+.sidebar .dropdown-item {
+  color: rgba(255, 255, 255, 0.8);
+  padding: 8px 15px;
+  transition: background 0.3s ease;
+}
+
+/* Hover effect */
+.sidebar .dropdown-item:hover {
+  background-color: rgba(255, 255, 255, 0.2);
+  color: white;
+}
+
+
+    </style>
+  </head>
+  <body>
+    <!-- Sidebar -->
+    <nav class="sidebar">
+      <div class="p-3">
+        <h3 class="text-center mb-4">Admin Panel</h3>
+        <ul class="nav flex-column">
+          <li class="nav-item">
+            <a class="nav-link active" href="#dashboard">
+              <i class="fas fa-tachometer-alt"></i> Dashboard
+            </a>
+          </li>
+          <li class="nav-item dropdown">
+            <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button">
+              <i class="fas fa-users"></i> User Management
+            </a>
+            <ul class="dropdown-menu dropdown-menu-dark" aria-labelledby="userDropdown">
+              <li><a class="dropdown-item" href="staff-managemet.php">Staff Management</a></li>
+              <li><a class="dropdown-item" href="#">Staff List</a></li>
+            </ul>
+          </li>
+          
+          
+          <li class="nav-item">
+            <a class="nav-link" href="#inventory">
+              <i class="fas fa-boxes"></i> Inventory
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="#reports">
+              <i class="fas fa-chart-bar"></i> Reports
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="#audit">
+              <i class="fas fa-history"></i> Audit Logs
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="login.html">
+              <i class="fas fa-sign-out-alt"></i> Logout
+            </a>
+          </li>
+        </ul>
+      </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="main-content">
+      <!-- Top Bar -->
+      <div class="topbar d-flex justify-content-between align-items-center">
+        <h4 class="mb-0">Dashboard Overview</h4>
+        <div class="d-flex align-items-center">
+          <div class="position-relative me-3">
+            <i class="fas fa-bell fa-lg"></i>
+            <span class="notification-badge">3</span>
+          </div>
+          <div class="dropdown">
+            <button
+              class="btn btn-link dropdown-toggle"
+              type="button"
+              id="userDropdown"
+              data-bs-toggle="dropdown"
+            >
+              <i class="fas fa-user-circle fa-lg"></i>
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end">
+              <li><a class="dropdown-item" href="#profile">Profile</a></li>
+              <li><a class="dropdown-item" href="#settings">Settings</a></li>
+              <li><hr class="dropdown-divider" /></li>
+              <li><a class="dropdown-item" href="login.html">Logout</a></li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- Dashboard Stats -->
+      <div class="row">
+        <div class="col-xl-3 col-md-6">
+          <div class="card border-left-primary">
+            <div class="card-body">
+              <div class="row align-items-center">
+                <div class="col">
+                  <div
+                    class="text-xs font-weight-bold text-primary text-uppercase mb-1"
+                  >
+                    Total Users
+                  </div>
+                  <div class="h5 mb-0 font-weight-bold text-gray-800">250</div>
+                </div>
+                <div class="col-auto">
+                  <i class="fas fa-users fa-2x text-gray-300"></i>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="col-xl-3 col-md-6">
+          <div class="card border-left-success">
+            <div class="card-body">
+              <div class="row align-items-center">
+                <div class="col">
+                  <div
+                    class="text-xs font-weight-bold text-success text-uppercase mb-1"
+                  >
+                    Total Products
+                  </div>
+                  <div class="h5 mb-0 font-weight-bold text-gray-800">
+                    1,200
+                  </div>
+                </div>
+                <div class="col-auto">
+                  <i class="fas fa-boxes fa-2x text-gray-300"></i>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="col-xl-3 col-md-6">
+          <div class="card border-left-warning">
+            <div class="card-body">
+              <div class="row align-items-center">
+                <div class="col">
+                  <div
+                    class="text-xs font-weight-bold text-warning text-uppercase mb-1"
+                  >
+                    Low Stock Items
+                  </div>
+                  <div class="h5 mb-0 font-weight-bold text-gray-800">15</div>
+                </div>
+                <div class="col-auto">
+                  <i
+                    class="fas fa-exclamation-triangle fa-2x text-gray-300"
+                  ></i>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="col-xl-3 col-md-6">
+          <div class="card border-left-info">
+            <div class="card-body">
+              <div class="row align-items-center">
+                <div class="col">
+                  <div
+                    class="text-xs font-weight-bold text-info text-uppercase mb-1"
+                  >
+                    Monthly Sales
+                  </div>
+                  <div class="h5 mb-0 font-weight-bold text-gray-800">
+                    $45,000
+                  </div>
+                </div>
+                <div class="col-auto">
+                  <i class="fas fa-dollar-sign fa-2x text-gray-300"></i>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Charts Row -->
+      <div class="row">
+        <div class="col-xl-8">
+          <div class="card">
+            <div class="card-header">
+              <h6 class="m-0 font-weight-bold text-primary">Sales Overview</h6>
+            </div>
+            <div class="card-body">
+              <div class="chart-container">
+                <canvas id="salesChart"></canvas>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="col-xl-4">
+          <div class="card">
+            <div class="card-header">
+              <h6 class="m-0 font-weight-bold text-primary">
+                Inventory Status
+              </h6>
+            </div>
+            <div class="card-body">
+              <div class="chart-container">
+                <canvas id="inventoryChart"></canvas>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Recent Activities and Low Stock -->
+      <div class="row">
+        <div class="col-xl-8">
+          <div class="card">
+            <div class="card-header">
+              <h6 class="m-0 font-weight-bold text-primary">
+                Recent Activities
+              </h6>
+            </div>
+            <div class="card-body activity-log">
+              <div class="activity-item">
+                <div class="small text-gray-500">December 12, 2023</div>
+                <span>Admin user added new product "Laptop X1"</span>
+              </div>
+              <div class="activity-item">
+                <div class="small text-gray-500">December 12, 2023</div>
+                <span>Stock updated for product ID #1234</span>
+              </div>
+              <div class="activity-item">
+                <div class="small text-gray-500">December 11, 2023</div>
+                <span>New user account created for John Doe</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="col-xl-4">
+          <div class="card">
+            <div class="card-header">
+              <h6 class="m-0 font-weight-bold text-primary">
+                Low Stock Alerts
+              </h6>
+            </div>
+            <div class="card-body">
+              <div class="alert alert-warning">
+                <i class="fas fa-exclamation-circle"></i> Product A - 5 units
+                remaining
+              </div>
+              <div class="alert alert-warning">
+                <i class="fas fa-exclamation-circle"></i> Product B - 3 units
+                remaining
+              </div>
+              <div class="alert alert-danger">
+                <i class="fas fa-exclamation-triangle"></i> Product C - Out of
+                stock
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bootstrap JS and dependencies -->
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.min.js"></script>
+
+    <script>
+      // Sales Chart
+      const salesCtx = document.getElementById("salesChart").getContext("2d");
+      new Chart(salesCtx, {
+        type: "line",
+        data: {
+          labels: ["Jan", "Feb", "Mar", "Apr", "May", "Jun"],
+          datasets: [
+            {
+              label: "Monthly Sales",
+              data: [65, 59, 80, 81, 56, 55],
+              borderColor: "#4e73df",
+              tension: 0.1,
+            },
+          ],
+        },
+        options: {
+          maintainAspectRatio: false,
+          scales: {
+            y: {
+              beginAtZero: true,
+            },
+          },
+        },
+      });
+
+      // Inventory Chart
+      const inventoryCtx = document
+        .getElementById("inventoryChart")
+        .getContext("2d");
+      new Chart(inventoryCtx, {
+        type: "doughnut",
+        data: {
+          labels: ["In Stock", "Low Stock", "Out of Stock"],
+          datasets: [
+            {
+              data: [70, 15, 15],
+              backgroundColor: ["#1cc88a", "#f6c23e", "#e74a3b"],
+            },
+          ],
+        },
+        options: {
+          maintainAspectRatio: false,
+        },
+      });
+    </script>
+  </body>
+</html>

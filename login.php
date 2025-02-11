@@ -1,0 +1,224 @@
+<?php
+session_start();
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
+
+// Database connection details
+$host = 'localhost';
+$dbname = 'pharma';
+$username = 'root';
+$password = ''; // Empty password for root user
+
+try {
+    // Establish database connection
+    $pdo = new PDO("mysql:host=$host;dbname=$dbname", $username, $password);
+    $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+} catch (PDOException $e) {
+    die("Connection failed: " . $e->getMessage());
+}
+
+// Initialize error variable
+$error = '';
+
+if ($_SERVER["REQUEST_METHOD"] == "POST") {
+    $email = trim($_POST["email"]);
+    $password = trim($_POST["password"]);
+
+    try {
+        // Query user by email
+        $stmt = $pdo->prepare("SELECT user_id, username, email, password, role FROM users WHERE email = ?");
+        $stmt->execute([$email]);
+        $user = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        if ($user && password_verify($password, $user['password'])) {
+            // Set session variables
+            $_SESSION["logged_in"] = true;
+            $_SESSION["user_id"] = $user["user_id"];
+            $_SESSION["username"] = $user["username"];
+            $_SESSION["email"] = $user["email"];
+            $_SESSION["role"] = $user["role"];
+
+            // Role-based redirection
+            $role = strtolower($user["role"]);
+            switch ($role) {
+                case "admin":
+                    header("Location: admin-dashboard.html");
+                    break;
+                case "staff":
+                    header("Location: staff-dashboard.html");
+                    break;
+                case "user":
+                    header("Location: index.php");
+                    break;
+                default:
+                    header("Location: index.php");
+            }
+            exit();
+        } else {
+            $error = "Invalid email or password!";
+        }
+    } catch (PDOException $e) {
+        $error = "An error occurred. Please try again later.";
+        error_log("Login error: " . $e->getMessage());
+    }
+}
+?>
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Pharmacy Management System</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Poppins', sans-serif; }
+        body { 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            min-height: 100vh; 
+            background: linear-gradient(135deg, #4299e1, #2b6cb0); 
+        }
+        .container { 
+            background: #fff; 
+            padding: 2rem; 
+            border-radius: 12px; 
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2); 
+            width: 100%; 
+            max-width: 400px; 
+            margin: 1rem;
+        }
+        .logo { 
+            text-align: center; 
+            margin-bottom: 1.5rem; 
+        }
+        .logo img { 
+            max-width: 150px; 
+            height: auto; 
+        }
+        h2 { 
+            color: #1a365d; 
+            margin-bottom: 1.5rem; 
+            text-align: center; 
+        }
+        .form-group { 
+            margin-bottom: 1.25rem; 
+        }
+        .form-group label { 
+            display: block; 
+            margin-bottom: 0.5rem; 
+            color: #2d3748; 
+            font-weight: 500; 
+        }
+        .form-group input { 
+            width: 100%; 
+            padding: 0.75rem; 
+            border: 2px solid #e2e8f0; 
+            border-radius: 8px; 
+            font-size: 1rem; 
+            transition: border-color 0.2s ease;
+        }
+        .form-group input:focus { 
+            border-color: #4299e1; 
+            outline: none; 
+            box-shadow: 0 0 0 3px rgba(66, 153, 225, 0.1); 
+        }
+        .password-container { 
+            position: relative; 
+        }
+        .toggle-password { 
+            position: absolute; 
+            right: 1rem; 
+            top: 50%; 
+            transform: translateY(-50%); 
+            cursor: pointer; 
+            color: #4a5568; 
+        }
+        .btn-login { 
+            width: 100%; 
+            padding: 0.75rem; 
+            background: #4299e1; 
+            color: white; 
+            border: none; 
+            border-radius: 8px; 
+            font-size: 1rem; 
+            font-weight: 600; 
+            cursor: pointer; 
+            transition: background-color 0.2s ease; 
+        }
+        .btn-login:hover { 
+            background: #2b6cb0; 
+        }
+        .error { 
+            background: #fff5f5; 
+            color: #c53030; 
+            padding: 0.75rem; 
+            border-radius: 8px; 
+            margin-bottom: 1rem; 
+            font-size: 0.875rem; 
+            text-align: center; 
+        }
+        .register-link { 
+            text-align: center; 
+            margin-top: 1rem; 
+            color: #4a5568; 
+        }
+        .register-link a { 
+            color: #4299e1; 
+            text-decoration: none; 
+            font-weight: 500; 
+        }
+        .register-link a:hover { 
+            text-decoration: underline; 
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="logo">
+            <!-- Add your logo here -->
+            <h2>Pharmacy Management System</h2>
+        </div>
+        
+        <?php if ($error): ?>
+            <div class="error"><?php echo htmlspecialchars($error); ?></div>
+        <?php endif; ?>
+
+        <form action="<?php echo htmlspecialchars($_SERVER['PHP_SELF']); ?>" method="post">
+            <div class="form-group">
+                <label for="email">Email Address</label>
+                <input type="email" id="email" name="email" required 
+                       placeholder="Enter your email"
+                       value="<?php echo isset($_POST['email']) ? htmlspecialchars($_POST['email']) : ''; ?>">
+            </div>
+
+            <div class="form-group">
+                <label for="password">Password</label>
+                <div class="password-container">
+                    <input type="password" id="password" name="password" required 
+                           placeholder="Enter your password">
+                    <i class="fas fa-eye toggle-password"></i>
+                </div>
+            </div>
+
+            <button type="submit" class="btn-login">Sign In</button>
+            
+            <div class="register-link">
+                <p>Don't have an account? <a href="register.php">Register</a></p>
+            </div>
+        </form>
+    </div>
+
+    <script>
+        document.querySelector('.toggle-password').addEventListener('click', function() {
+            const passwordField = document.getElementById('password');
+            const type = passwordField.getAttribute('type') === 'password' ? 'text' : 'password';
+            passwordField.setAttribute('type', type);
+            this.classList.toggle('fa-eye');
+            this.classList.toggle('fa-eye-slash');
+        });
+    </script>
+</body>
+</html>

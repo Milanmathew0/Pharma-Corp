@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Customer Dashboard - PharmaCare</title>
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    />
+    <style>
+      :root {
+        --primary-color: #2c9db7;
+        --secondary-color: #858796;
+        --success-color: #1cc88a;
+        --warning-color: #f6c23e;
+        --danger-color: #e74a3b;
+      }
+
+      body {
+        background-color: #f8f9fc;
+      }
+
+      .navbar {
+        background-color: var(--primary-color);
+      }
+
+      .card {
+        border: none;
+        border-radius: 10px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        margin-bottom: 20px;
+      }
+
+      .order-status {
+        padding: 15px;
+        border-left: 4px solid var(--primary-color);
+        background: white;
+        margin-bottom: 15px;
+        border-radius: 5px;
+      }
+
+      .notification-item {
+        padding: 15px;
+        border-bottom: 1px solid #eee;
+      }
+
+      .notification-item:last-child {
+        border-bottom: none;
+      }
+
+      .prescription-card {
+        background: white;
+        padding: 15px;
+        margin-bottom: 15px;
+        border-radius: 5px;
+        border-left: 4px solid var(--success-color);
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark mb-4">
+      <div class="container">
+        <a class="navbar-brand" href="#">Pharma-corp</a>
+        <button
+          class="navbar-toggler"
+          type="button"
+          data-bs-toggle="collapse"
+          data-bs-target="#navbarNav"
+        >
+          <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+          <ul class="navbar-nav ms-auto">
+            <li class="nav-item">
+              <a class="nav-link" href="#">
+                <i class="fas fa-bell"></i>
+                <span class="badge bg-danger">2</span>
+              </a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="#">
+                <i class="fas fa-user"></i> John Doe
+              </a>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="container">
+      <div class="row">
+        <!-- Order Tracking Section -->
+        <div class="col-md-8">
+          <div class="card">
+            <div class="card-header bg-white">
+              <h5 class="card-title mb-0">My Orders</h5>
+            </div>
+            <div class="card-body">
+              <div class="order-status">
+                <div class="d-flex justify-content-between align-items-center">
+                  <h6>Order #12345</h6>
+                  <span class="badge bg-primary">Processing</span>
+                </div>
+                <p class="text-muted mb-2">Ordered on: Dec 15, 2023</p>
+                <div class="progress mb-3" style="height: 10px">
+                  <div
+                    class="progress-bar"
+                    role="progressbar"
+                    style="width: 60%"
+                  ></div>
+                </div>
+                <button class="btn btn-sm btn-primary">Track Order</button>
+              </div>
+
+              <div class="order-status">
+                <div class="d-flex justify-content-between align-items-center">
+                  <h6>Order #12344</h6>
+                  <span class="badge bg-success">Ready for Pickup</span>
+                </div>
+                <p class="text-muted mb-2">Ordered on: Dec 14, 2023</p>
+                <button class="btn btn-sm btn-success">View Details</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Prescriptions Section -->
+          <div class="card">
+            <div class="card-header bg-white">
+              <h5 class="card-title mb-0">My Prescriptions</h5>
+            </div>
+            <div class="card-body">
+              <div class="prescription-card">
+                <h6>Dr. Smith's Prescription</h6>
+                <p class="text-muted mb-2">Valid until: Jan 15, 2024</p>
+                <button class="btn btn-sm btn-primary">Order Refill</button>
+              </div>
+              <div class="prescription-card">
+                <h6>Dr. Johnson's Prescription</h6>
+                <p class="text-muted mb-2">Valid until: Feb 1, 2024</p>
+                <button class="btn btn-sm btn-primary">Order Refill</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Notifications and Profile Section -->
+        <div class="col-md-4">
+          <!-- Profile Card -->
+          <div class="card">
+            <div class="card-body text-center">
+              <img
+                src="https://via.placeholder.com/80"
+                class="rounded-circle mb-3"
+                alt="Profile"
+              />
+              <h5>John Doe</h5>
+              <p class="text-muted">Customer ID: #1234</p>
+              <button class="btn btn-outline-primary btn-sm">
+                Edit Profile
+              </button>
+            </div>
+          </div>
+
+          <!-- Notifications Card -->
+          <div class="card">
+            <div class="card-header bg-white">
+              <h5 class="card-title mb-0">Notifications</h5>
+            </div>
+            <div class="card-body p-0">
+              <div class="notification-item">
+                <i class="fas fa-clock text-warning me-2"></i>
+                <strong>Refill Reminder:</strong>
+                <p class="mb-0">Blood pressure medication due for refill</p>
+                <small class="text-muted">2 hours ago</small>
+              </div>
+              <div class="notification-item">
+                <i class="fas fa-check-circle text-success me-2"></i>
+                <strong>Order Ready:</strong>
+                <p class="mb-0">Your order #12344 is ready for pickup</p>
+                <small class="text-muted">1 day ago</small>
+              </div>
+            </div>
+          </div>
+
+          <!-- Quick Actions -->
+          <div class="card">
+            <div class="card-header bg-white">
+              <h5 class="card-title mb-0">Quick Actions</h5>
+            </div>
+            <div class="card-body">
+              <div class="d-grid gap-2">
+                <button class="btn btn-outline-primary">
+                  <i class="fas fa-plus-circle me-2"></i>New Order
+                </button>
+                <button class="btn btn-outline-primary">
+                  <i class="fas fa-file-medical me-2"></i>Upload Prescription
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  </body>
+</html>

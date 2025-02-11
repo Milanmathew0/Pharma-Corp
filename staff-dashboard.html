@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Staff Dashboard - Pharmacy Management</title>
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    />
+    <style>
+      :root {
+        --primary-color: #2c9db7;
+        --secondary-color: #858796;
+        --success-color: #1cc88a;
+        --warning-color: #f6c23e;
+        --danger-color: #e74a3b;
+      }
+
+      body {
+        background-color: #f8f9fc;
+      }
+
+      .sidebar {
+        min-height: 100vh;
+        background: linear-gradient(
+          180deg,
+          var(--primary-color) 10%,
+          #1a7a8c 100%
+        );
+        color: white;
+        position: fixed;
+        width: 250px;
+        z-index: 1000;
+      }
+
+      .main-content {
+        margin-left: 250px;
+        padding: 2rem;
+      }
+
+      .search-bar {
+        background: white;
+        padding: 1rem;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      }
+
+      .card {
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        margin-bottom: 1.5rem;
+      }
+
+      .notification-badge {
+        position: absolute;
+        top: -5px;
+        right: -5px;
+        padding: 3px 6px;
+        border-radius: 50%;
+        background: var(--danger-color);
+        color: white;
+        font-size: 0.7rem;
+      }
+
+      .barcode-scanner {
+        background: #f8f9fc;
+        border: 2px dashed #ccc;
+        padding: 1.5rem;
+        text-align: center;
+        border-radius: 8px;
+        margin-bottom: 1rem;
+      }
+
+      .quick-actions {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1rem;
+        margin-bottom: 2rem;
+      }
+
+      .quick-action-card {
+        background: white;
+        padding: 1rem;
+        border-radius: 8px;
+        text-align: center;
+        cursor: pointer;
+        transition: transform 0.2s;
+      }
+
+      .quick-action-card:hover {
+        transform: translateY(-5px);
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Sidebar -->
+    <nav class="sidebar">
+      <div class="p-3">
+        <h3 class="text-center mb-4">Pharmacy Staff</h3>
+        <ul class="nav flex-column">
+          <li class="nav-item">
+            <a class="nav-link text-white" href="#dashboard">
+              <i class="fas fa-home"></i> Dashboard
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link text-white" href="#inventory">
+              <i class="fas fa-pills"></i> Inventory
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link text-white" href="#sales">
+              <i class="fas fa-cash-register"></i> Sales
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link text-white" href="#customers">
+              <i class="fas fa-users"></i> Customers
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link text-white" href="#prescriptions">
+              <i class="fas fa-file-medical"></i> Prescriptions
+            </a>
+          </li>
+        </ul>
+      </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="main-content">
+      <!-- Search Bar -->
+      <div class="search-bar mb-4">
+        <div class="row">
+          <div class="col-md-6">
+            <div class="input-group">
+              <input
+                type="text"
+                class="form-control"
+                placeholder="Search medicines, customers, or prescriptions..."
+              />
+              <button class="btn btn-primary">
+                <i class="fas fa-search"></i>
+              </button>
+            </div>
+          </div>
+          <div class="col-md-6 text-end">
+            <button class="btn btn-outline-primary me-2">
+              <i class="fas fa-filter"></i> Advanced Search
+            </button>
+            <button class="btn btn-success">
+              <i class="fas fa-plus"></i> New Sale
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Barcode Scanner -->
+      <div class="barcode-scanner mb-4">
+        <i class="fas fa-barcode fa-3x mb-3"></i>
+        <h5>Scan Barcode</h5>
+        <p class="text-muted">Place barcode under camera or enter manually</p>
+        <input
+          type="text"
+          class="form-control w-50 mx-auto"
+          placeholder="Enter barcode manually"
+        />
+      </div>
+
+      <!-- Quick Actions -->
+      <div class="quick-actions">
+        <div class="quick-action-card">
+          <i class="fas fa-plus-circle fa-2x mb-2 text-primary"></i>
+          <h6>New Sale</h6>
+        </div>
+        <div class="quick-action-card">
+          <i class="fas fa-user-plus fa-2x mb-2 text-success"></i>
+          <h6>Add Customer</h6>
+        </div>
+        <div class="quick-action-card">
+          <i class="fas fa-pills fa-2x mb-2 text-warning"></i>
+          <h6>Update Stock</h6>
+        </div>
+        <div class="quick-action-card">
+          <i class="fas fa-file-invoice fa-2x mb-2 text-info"></i>
+          <h6>View Reports</h6>
+        </div>
+      </div>
+
+      <!-- Alerts and Notifications -->
+      <div class="row mb-4">
+        <div class="col-md-6">
+          <div class="card">
+            <div class="card-header">
+              <h6 class="m-0 font-weight-bold text-primary">
+                Low Stock Alerts
+              </h6>
+            </div>
+            <div class="card-body">
+              <div class="alert alert-warning">
+                <i class="fas fa-exclamation-circle"></i> Paracetamol 500mg -
+                Only 20 units left
+              </div>
+              <div class="alert alert-danger">
+                <i class="fas fa-exclamation-triangle"></i> Amoxicillin 250mg -
+                Stock depleted
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-6">
+          <div class="card">
+            <div class="card-header">
+              <h6 class="m-0 font-weight-bold text-primary">Expiring Soon</h6>
+            </div>
+            <div class="card-body">
+              <div class="alert alert-warning">
+                <i class="fas fa-clock"></i> Aspirin 100mg - Expires in 30 days
+              </div>
+              <div class="alert alert-danger">
+                <i class="fas fa-calendar-times"></i> Vitamin C - Expires in 7
+                days
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Recent Sales and Customer Activity -->
+      <div class="row">
+        <div class="col-md-8">
+          <div class="card">
+            <div class="card-header">
+              <h6 class="m-0 font-weight-bold text-primary">Recent Sales</h6>
+            </div>
+            <div class="card-body">
+              <div class="table-responsive">
+                <table class="table">
+                  <thead>
+                    <tr>
+                      <th>Invoice #</th>
+                      <th>Customer</th>
+                      <th>Items</th>
+                      <th>Amount</th>
+                      <th>Status</th>
+                      <th>Action</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td>INV-001</td>
+                      <td>John Doe</td>
+                      <td>3</td>
+                      <td>$45.00</td>
+                      <td><span class="badge bg-success">Completed</span></td>
+                      <td>
+                        <button class="btn btn-sm btn-primary">View</button>
+                      </td>
+                    </tr>
+                    <!-- Add more rows as needed -->
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="card">
+            <div class="card-header">
+              <h6 class="m-0 font-weight-bold text-primary">
+                Customer Activity
+              </h6>
+            </div>
+            <div class="card-body">
+              <div class="activity-item mb-3">
+                <small class="text-muted">2 minutes ago</small>
+                <p class="mb-0">New prescription added for Jane Smith</p>
+              </div>
+              <div class="activity-item mb-3">
+                <small class="text-muted">15 minutes ago</small>
+                <p class="mb-0">Customer loyalty points updated</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bootstrap JS and dependencies -->
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.min.js"></script>
+  </body>
+</html>
