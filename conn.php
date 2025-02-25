@@ -1,15 +1,16 @@
 <?php
-// Database credentials
-$host = 'localhost';
-$dbname = 'pharma';
-$username = 'root';
-$password = '';
+// Database connection details
+$servername = "localhost"; // Change this if your database is hosted elsewhere
+$username = "root"; // Change this to your database username
+$password = ""; // Change this to your database password
+$database = "your_database_name"; // Change this to your database name
 
-try {
-  // Correct connection string format
-  $pdo = new PDO("mysql:host=$host;dbname=$dbname", $username, $password);
-  $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-} catch (PDOException $e) {
-  echo 'Connection failed: ' . $e->getMessage();
+// Create connection
+$conn = new mysqli($servername, $username, $password, $database);
+
+// Check connection
+if ($conn->connect_error) {
+    die("Connection failed: " . $conn->connect_error);
+} else {
 }
 ?>

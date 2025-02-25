@@ -28,59 +28,113 @@
 
       .hero-section {
         padding: 100px 0;
-        background: linear-gradient(
-          rgba(44, 157, 183, 0.1),
-          rgba(44, 157, 183, 0.1)
-        );
+        background: linear-gradient(rgba(44, 157, 183, 0.1), rgba(44, 157, 183, 0.1)),
+                    url('pic/3.jpg') no-repeat center center;
+        background-size: cover;
+        position: relative;
+        color: white;
+      }
+
+      .hero-section::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: 1;
+      }
+
+      .hero-section .container {
+        position: relative;
+        z-index: 2;
+      }
+
+      .hero-section h1 {
+        font-size: 3.5rem;
+        font-weight: 700;
+        margin-bottom: 1.5rem;
+        text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+      }
+
+      .hero-section p {
+        font-size: 1.25rem;
+        margin-bottom: 2rem;
+        text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
       }
 
       .feature-card {
-        padding: 20px;
-        border-radius: 10px;
-        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        padding: 30px;
+        border-radius: 15px;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
         margin-bottom: 30px;
         background: white;
-        transition: transform 0.3s ease;
+        transition: all 0.3s ease;
+        border: 1px solid rgba(44, 157, 183, 0.1);
       }
 
       .feature-card:hover {
-        transform: translateY(-5px);
+        transform: translateY(-10px);
+        box-shadow: 0 8px 25px rgba(44, 157, 183, 0.2);
       }
 
       .feature-card img {
-        border-radius: 8px;
-        height: 200px;
+        border-radius: 12px;
+        height: 250px;
         object-fit: cover;
         width: 100%;
+        margin-bottom: 1.5rem;
       }
 
-      .feature-icon {
-        font-size: 2.5rem;
+      .feature-card h3 {
         color: var(--primary-color);
         margin-bottom: 1rem;
+        font-weight: 600;
       }
 
       .testimonial-section {
-        background-color: #f8f9fc;
+        background: url('pic/4.jpg') no-repeat center center;
+        background-size: cover;
+        position: relative;
+        padding: 100px 0;
+      }
+
+      .testimonial-section::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(255, 255, 255, 0.95);
+      }
+
+      .testimonial-section .container {
+        position: relative;
       }
 
       .testimonial-card {
+        background: white;
         border: none;
-        border-radius: 10px;
-        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        border-radius: 15px;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
         margin: 20px;
+        transition: all 0.3s ease;
+      }
+
+      .testimonial-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 25px rgba(44, 157, 183, 0.2);
       }
 
       .cta-section {
-        background-color: var(--primary-color);
+        background: linear-gradient(rgba(44, 157, 183, 0.9), rgba(44, 157, 183, 0.9)),
+                    url('pic/5.jpg') no-repeat center center;
+        background-size: cover;
         color: white;
-        padding: 60px 0;
-      }
-
-      footer {
-        background-color: #333;
-        color: white;
-        padding: 40px 0;
+        padding: 100px 0;
+        position: relative;
       }
 
       .social-icons a {
@@ -94,7 +148,7 @@
     <!-- Navigation -->
     <nav class="navbar navbar-expand-lg navbar-dark">
       <div class="container">
-        <a class="navbar-brand" href="index.html">Pharma-Corp</a>
+        <a class="navbar-brand" href="index.php">Pharma-Corp</a>
         <button
           class="navbar-toggler"
           type="button"
@@ -106,24 +160,22 @@
         <div class="collapse navbar-collapse" id="navbarNav">
           <ul class="navbar-nav ms-auto">
             <li class="nav-item">
-              <a class="nav-link" href="index.html#features">Features</a>
+              <a class="nav-link" href="index.php#features">Features</a>
             </li>
             <li class="nav-item">
-              <a class="nav-link" href="services.html">Services</a>
+              <a class="nav-link" href="services.php">Services</a>
             </li>
             <li class="nav-item">
-              <a class="nav-link" href="index.html#testimonials"
-                >Testimonials</a
-              >
+              <a class="nav-link" href="index.php#testimonials">Testimonials</a>
             </li>
             <li class="nav-item">
-              <a class="nav-link" href="contact.html">Contact</a>
+              <a class="nav-link" href="contact.php">Contact</a>
             </li>
             <li class="nav-item">
-              <a class="nav-link" href="login.html">Login</a>
+              <a class="nav-link" href="login.php">Login</a>
             </li>
             <li class="nav-item">
-              <a class="nav-link" href="registration.html">Register</a>
+              <a class="nav-link" href="registration.php">Register</a>
             </li>
           </ul>
         </div>
@@ -139,13 +191,11 @@
             <p>
               Streamline your healthcare operations with our innovative platform
             </p>
-            <a href="contact.html" class="btn btn-primary btn-lg"
-              >Get Started</a
-            >
+            <a href="contact.php" class="btn btn-primary btn-lg">Get Started</a>
           </div>
           <div class="col-lg-6">
             <img
-              src="images/hero/hero-bg.jpg"
+              src="pic/3.jpg"
               alt="Healthcare Management"
               class="img-fluid rounded shadow"
             />
@@ -160,35 +210,26 @@
         <div class="row">
           <div class="col-md-4">
             <div class="feature-card">
-              <img
-                src="images/features/feature-1.jpg"
-                alt="Feature 1"
-                class="img-fluid mb-3"
-              />
+              <img src="pic/3.jpg" alt="Patient Management" class="img-fluid mb-3" />
               <h3>Patient Management</h3>
-              // ... content ...
+              <p>Efficiently manage patient records, appointments, and medical histories with our comprehensive system.</p>
+              <a href="#" class="btn btn-outline-primary">Learn More</a>
             </div>
           </div>
           <div class="col-md-4">
             <div class="feature-card">
-              <img
-                src="images/features/feature-2.jpg"
-                alt="Feature 2"
-                class="img-fluid mb-3"
-              />
+              <img src="pic/4.jpg" alt="Inventory Control" class="img-fluid mb-3" />
               <h3>Inventory Control</h3>
-              // ... content ...
+              <p>Keep track of your pharmacy inventory in real-time with automated alerts and reorder notifications.</p>
+              <a href="#" class="btn btn-outline-primary">Learn More</a>
             </div>
           </div>
           <div class="col-md-4">
             <div class="feature-card">
-              <img
-                src="images/features/feature-3.jpg"
-                alt="Feature 3"
-                class="img-fluid mb-3"
-              />
+              <img src="pic/5.jpg" alt="Analytics Dashboard" class="img-fluid mb-3" />
               <h3>Analytics Dashboard</h3>
-              // ... content ...
+              <p>Make data-driven decisions with our powerful analytics dashboard and reporting tools.</p>
+              <a href="#" class="btn btn-outline-primary">Learn More</a>
             </div>
           </div>
         </div>
@@ -269,9 +310,7 @@
           Join thousands of satisfied customers who trust us with their
           healthcare needs.
         </p>
-        <a href="registration.html" class="btn btn-light btn-lg"
-          >Create Account</a
-        >
+        <a href="registration.php" class="btn btn-light btn-lg">Create Account</a>
       </div>
     </section>
 
@@ -289,13 +328,13 @@
           <div class="col-md-4 mb-4">
             <h5>Quick Links</h5>
             <ul class="list-unstyled">
-              <li><a href="about.html" class="text-white">About Us</a></li>
-              <li><a href="services.html" class="text-white">Services</a></li>
+              <li><a href="about.php" class="text-white">About Us</a></li>
+              <li><a href="services.php" class="text-white">Services</a></li>
               <li>
-                <a href="privacy.html" class="text-white">Privacy Policy</a>
+                <a href="privacy.php" class="text-white">Privacy Policy</a>
               </li>
               <li>
-                <a href="terms.html" class="text-white">Terms of Service</a>
+                <a href="terms.php" class="text-white">Terms of Service</a>
               </li>
             </ul>
           </div>

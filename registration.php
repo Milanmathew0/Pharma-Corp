@@ -1,3 +1,116 @@
+<?php
+// Start session for flash messages
+session_start();
+
+// Database connection
+$host = "localhost";
+$dbname = "pharma";
+$username = "root";
+$password = "";
+
+try {
+    $pdo = new PDO("mysql:host=$host;dbname=$dbname", $username, $password);
+    $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+
+    if ($_SERVER["REQUEST_METHOD"] == "POST") {
+        $user_id = trim($_POST['user_id']);
+        $username = trim($_POST['username']);
+        $email = trim($_POST['email']);
+        $password = trim($_POST['password']);
+        $confirmPassword = trim($_POST['confirm-password']);
+
+        // Enhanced server-side validation
+        if (empty($user_id) || empty($username) || empty($email) || empty($password)) {
+            $_SESSION['error'] = "All fields are required";
+            header("Location: registration.php");
+            exit();
+        }
+
+        // Validate email format
+        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            $_SESSION['error'] = "Please enter a valid email address";
+            header("Location: registration.php");
+            exit();
+        }
+
+        // Validate username (alphanumeric and underscores only, 3-20 characters)
+        if (!preg_match('/^[a-zA-Z0-9_]{3,20}$/', $username)) {
+            $_SESSION['error'] = "Username must be 3-20 characters and can only contain letters, numbers, and underscores";
+            header("Location: registration.php");
+            exit();
+        }
+
+        // Validate user_id (alphanumeric, 5-10 characters)
+        if (!preg_match('/^[a-zA-Z0-9]{5,10}$/', $user_id)) {
+            $_SESSION['error'] = "User ID must be 5-10 characters and can only contain letters and numbers";
+            header("Location: registration.php");
+            exit();
+        }
+
+        // Validate password strength
+        if (strlen($password) < 8) {
+            $_SESSION['error'] = "Password must be at least 8 characters long";
+            header("Location: registration.php");
+            exit();
+        }
+
+        if (!preg_match('/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/', $password)) {
+            $_SESSION['error'] = "Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character";
+            header("Location: registration.php");
+            exit();
+        }
+
+        // Check if passwords match
+        if ($password !== $confirmPassword) {
+            $_SESSION['error'] = "Passwords do not match";
+            header("Location: registration.php");
+            exit();
+        }
+
+        // Check if user_id already exists
+        $stmt = $pdo->prepare("SELECT COUNT(*) FROM users WHERE user_id = ?");
+        $stmt->execute([$user_id]);
+        if ($stmt->fetchColumn() > 0) {
+            $_SESSION['error'] = "User ID already exists";
+            header("Location: registration.php");
+            exit();
+        }
+
+        // Check if email already exists
+        $stmt = $pdo->prepare("SELECT COUNT(*) FROM users WHERE email = ?");
+        $stmt->execute([$email]);
+        if ($stmt->fetchColumn() > 0) {
+            $_SESSION['error'] = "Email already exists";
+            header("Location: registration.php");
+            exit();
+        }
+
+        // Hash the password
+        $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
+
+        // Insert into database
+        $sql = "INSERT INTO users (user_id, username, email, password) VALUES (:user_id, :username, :email, :password)";
+        $stmt = $pdo->prepare($sql);
+        $stmt->execute([
+            'user_id' => $user_id,
+            'username' => $username,
+            'email' => $email,
+            'password' => $hashedPassword
+        ]);
+
+        // Set success message and redirect
+        $_SESSION['success'] = "Registration successful! Please login.";
+        header("Location: login.php");
+        exit();
+    }
+} catch (PDOException $e) {
+    $_SESSION['error'] = "Registration failed: " . $e->getMessage();
+    header("Location: registration.php");
+    exit();
+}
+?>
+
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -7,255 +120,211 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        * {
+        body {
             margin: 0;
             padding: 0;
-            box-sizing: border-box;
-            font-family: 'Poppins', sans-serif;
-        }
-
-        body {
             min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background-image: url('/api/placeholder/1920/1080');
+            background: url('pic/1.jpg') no-repeat center center fixed;
             background-size: cover;
-            background-position: center;
-            padding: 20px;
-            position: relative;
-            color: #2d3748;
-        }
-
-        body::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: linear-gradient(135deg, rgba(66, 153, 225, 0.9), rgba(49, 130, 206, 0.85));
-            animation: gradientBG 20s ease infinite;
-            background-size: 400% 400%;
-        }
-
-        @keyframes gradientBG {
-            0% { background-position: 0% 50% }
-            50% { background-position: 100% 50% }
-            100% { background-position: 0% 50% }
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
         }
 
         .container {
-            position: relative;
             background: rgba(255, 255, 255, 0.95);
-            padding: 40px;
-            border-radius: 24px;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+            padding: 2.5rem;
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
             width: 100%;
-            max-width: 480px;
-            backdrop-filter: blur(20px);
-            transform: translateY(0);
-            transition: all 0.4s ease;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-        }
-
-        .container:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 30px 70px rgba(0, 0, 0, 0.5);
-        }
-
-        h2 {
-            text-align: center;
-            color: #1a365d;
-            margin-bottom: 35px;
-            font-size: 36px;
-            font-weight: 700;
-            letter-spacing: -0.5px;
-            position: relative;
-            padding-bottom: 15px;
-            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
-        }
-
-        h2::after {
-            content: '';
-            position: absolute;
-            bottom: 0;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 60px;
-            height: 3px;
-            background: linear-gradient(45deg, #4299e1, #2b6cb0);
-            border-radius: 2px;
+            max-width: 450px;
+            margin: 20px;
         }
 
         .form-group {
-            margin-bottom: 24px;
+            margin-bottom: 1.5rem;
             position: relative;
         }
 
         .form-group label {
             display: block;
-            margin-bottom: 8px;
-            color: #2d3748;
+            margin-bottom: 0.5rem;
+            color: #333;
             font-weight: 500;
-            font-size: 15px;
-            transition: color 0.3s ease;
-            letter-spacing: 0.3px;
         }
 
         .form-group input {
             width: 100%;
-            padding: 16px;
-            padding-left: 45px;
-            border: 2px solid #e2e8f0;
-            border-radius: 12px;
-            font-size: 16px;
-            transition: all 0.3s ease;
-            background: rgba(248, 250, 252, 0.8);
-            color: #2d3748;
-            font-weight: 400;
+            padding: 10px 35px 10px 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+            box-sizing: border-box;
         }
 
         .form-group input:focus {
-            outline: none;
             border-color: #4299e1;
-            background: #fff;
-            box-shadow: 0 0 0 4px rgba(66, 153, 225, 0.15);
+            outline: none;
         }
 
         .form-group i {
             position: absolute;
-            left: 16px;
-            top: 46px;
-            color: #718096;
-            transition: color 0.3s ease;
+            right: 12px;
+            top: 38px;
+            color: #666;
         }
 
-        .form-group input:focus + i {
-            color: #4299e1;
-        }
-
-        .password-container {
-            position: relative;
-        }
-
-        .toggle-password {
-            position: absolute;
-            right: 16px;
-            top: 46px;
-            cursor: pointer;
-            color: #718096;
-            transition: color 0.3s ease;
+        .error-message {
+            color: #e53e3e;
+            font-size: 12px;
+            margin-top: 5px;
+            display: block;
         }
 
         button {
             width: 100%;
-            padding: 16px;
-            background: linear-gradient(45deg, #4299e1, #2b6cb0);
+            padding: 12px;
+            background-color: #4299e1;
             color: white;
             border: none;
-            border-radius: 12px;
-            font-size: 18px;
-            font-weight: 600;
+            border-radius: 5px;
+            font-size: 16px;
             cursor: pointer;
-            transition: all 0.4s ease;
-            box-shadow: 0 4px 12px rgba(43, 108, 176, 0.2);
-            position: relative;
-            overflow: hidden;
-            letter-spacing: 0.5px;
-            text-transform: uppercase;
-        }
-
-        button::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: -100%;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(
-                120deg,
-                transparent,
-                rgba(255, 255, 255, 0.3),
-                transparent
-            );
-            transition: 0.5s;
-        }
-
-        button:hover::before {
-            left: 100%;
+            transition: background-color 0.3s;
         }
 
         button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(43, 108, 176, 0.3);
-            background: linear-gradient(45deg, #3182ce, #2c5282);
+            background-color: #3182ce;
         }
 
-        ::placeholder {
-            color: #a0aec0;
-            font-weight: 400;
+        .text-center {
+            text-align: center;
+            margin-top: 1rem;
         }
 
-        @media (max-width: 480px) {
-            .container {
-                padding: 30px 20px;
-            }
-            
-            h2 {
-                font-size: 28px;
-            }
+        h2 {
+            text-align: center;
+            margin-bottom: 1.5rem;
+            color: #2d3748;
+        }
+
+        .password-strength {
+            margin-top: 5px;
+            height: 5px;
+            border-radius: 3px;
+            transition: all 0.3s;
+        }
+
+        .flash-message {
+            padding: 12px;
+            margin-bottom: 1rem;
+            border-radius: 5px;
+            text-align: center;
+        }
+
+        .alert {
+            padding: 12px;
+            margin-bottom: 1rem;
+            border-radius: 5px;
+            background-color: #fed7d7;
+            color: #c53030;
+        }
+
+        a {
+            color: #4299e1;
+            text-decoration: none;
+        }
+
+        a:hover {
+            text-decoration: underline;
         }
     </style>
 </head>
 <body>
     <div class="container">
         <h2>Create Account</h2>
-        <form action="connect.php" method="post">
+        <?php
+        // Display error message if any
+        if (isset($_SESSION['error'])) {
+            echo '<div class="flash-message alert">' . htmlspecialchars($_SESSION['error']) . '</div>';
+            unset($_SESSION['error']);
+        }
+        // Display success message if any
+        if (isset($_SESSION['success'])) {
+            echo '<div class="flash-message">' . htmlspecialchars($_SESSION['success']) . '</div>';
+            unset($_SESSION['success']);
+        }
+        ?>
+        <form action="" method="post" id="registrationForm" onsubmit="return validateForm()">
             <div class="form-group">
                 <label for="user_id">User ID</label>
-                <input type="text" id="user_id" name="user_id" placeholder="Enter your user ID">
+                <input type="text" id="user_id" name="user_id" required 
+                       placeholder="Enter your user ID"
+                       pattern="[a-zA-Z0-9]{5,10}"
+                       title="User ID must be 5-10 characters and can only contain letters and numbers">
                 <i class="fas fa-user"></i>
+                <small class="error-message" id="userIdError"></small>
             </div>
 
             <div class="form-group">
                 <label for="username">Username</label>
-                <input type="text" id="username" name="username" required placeholder="Choose a username">
+                <input type="text" id="username" name="username" required 
+                       placeholder="Choose a username"
+                       pattern="[a-zA-Z0-9_]{3,20}"
+                       title="Username must be 3-20 characters and can only contain letters, numbers, and underscores">
                 <i class="fas fa-user-circle"></i>
+                <small class="error-message" id="usernameError"></small>
             </div>
 
             <div class="form-group">
                 <label for="email">Email Address</label>
-                <input type="email" id="email" name="email" required placeholder="Enter your email">
+                <input type="email" id="email" name="email" required 
+                       placeholder="Enter your email"
+                       pattern="[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$"
+                       title="Please enter a valid email address">
                 <i class="fas fa-envelope"></i>
+                <small class="error-message" id="emailError"></small>
             </div>
 
             <div class="form-group">
                 <label for="password">Password</label>
                 <div class="password-container">
-                    <input type="password" id="password" name="password" required placeholder="Create a password">
+                    <input type="password" id="password" name="password" required 
+                           placeholder="Create a password"
+                           minlength="8"
+                           title="Password must be at least 8 characters long">
                     <i class="fas fa-lock"></i>
                     <i class="fas fa-eye toggle-password"></i>
                 </div>
+                <small class="error-message" id="passwordError"></small>
+                <div class="password-strength" id="passwordStrength"></div>
             </div>
 
             <div class="form-group">
                 <label for="confirm-password">Confirm Password</label>
                 <div class="password-container">
-                    <input type="password" id="confirm-password" name="confirm-password" required placeholder="Confirm your password">
+                    <input type="password" id="confirm-password" name="confirm-password" required 
+                           placeholder="Confirm your password">
                     <i class="fas fa-lock"></i>
                     <i class="fas fa-eye toggle-password"></i>
                 </div>
+                <small class="error-message" id="confirmPasswordError"></small>
             </div>
 
             <button type="submit" name="submit">Create Account</button>
-            <div style="text-align: center; margin-top: 20px; font-size: 15px;">
-                Already have an account? <a href="login.php" style="color: #4299e1; text-decoration: none; font-weight: 500; transition: color 0.3s ease;">Login</a>
+            <div class="text-center">
+                Already have an account? <a href="login.php">Login</a>
+            </div>
+            <div class="text-center">
+                Staff member? <a href="staff-reg.php">Staff Login</a>
             </div>
         </form>
     </div>
 
     <script>
+        // Password toggle functionality
         document.querySelectorAll('.toggle-password').forEach(toggle => {
             toggle.addEventListener('click', function() {
                 const input = this.previousElementSibling.previousElementSibling;
@@ -266,14 +335,166 @@
             });
         });
 
-        document.getElementById('confirm-password').addEventListener('input', function() {
-            const password = document.getElementById('password').value;
-            const confirmPassword = this.value;
-            
-            if (password !== confirmPassword) {
-                this.setCustomValidity("Passwords do not match");
+        function validateForm() {
+            let isValid = true;
+            const userId = document.getElementById('user_id');
+            const username = document.getElementById('username');
+            const email = document.getElementById('email');
+            const password = document.getElementById('password');
+            const confirmPassword = document.getElementById('confirm-password');
+
+            // Reset all error messages
+            document.querySelectorAll('.error-message').forEach(el => el.textContent = '');
+            document.querySelectorAll('input').forEach(el => el.classList.remove('error'));
+
+            // User ID validation
+            if (!userId.value.trim()) {
+                document.getElementById('userIdError').textContent = 'User ID is required';
+                userId.classList.add('error');
+                isValid = false;
+            } else if (!/^[a-zA-Z0-9]{5,10}$/.test(userId.value)) {
+                document.getElementById('userIdError').textContent = 'User ID must be 5-10 characters and can only contain letters and numbers';
+                userId.classList.add('error');
+                isValid = false;
+            }
+
+            // Username validation
+            if (!username.value.trim()) {
+                document.getElementById('usernameError').textContent = 'Username is required';
+                username.classList.add('error');
+                isValid = false;
+            } else if (!/^[a-zA-Z0-9_]{3,20}$/.test(username.value)) {
+                document.getElementById('usernameError').textContent = 'Username must be 3-20 characters and can only contain letters, numbers, and underscores';
+                username.classList.add('error');
+                isValid = false;
+            }
+
+            // Email validation
+            const emailPattern = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+            if (!email.value.trim()) {
+                document.getElementById('emailError').textContent = 'Email is required';
+                email.classList.add('error');
+                isValid = false;
+            } else if (!emailPattern.test(email.value)) {
+                document.getElementById('emailError').textContent = 'Please enter a valid email address';
+                email.classList.add('error');
+                isValid = false;
+            }
+
+            // Password validation
+            if (!password.value) {
+                document.getElementById('passwordError').textContent = 'Password is required';
+                password.classList.add('error');
+                isValid = false;
+            } else if (password.value.length < 8) {
+                document.getElementById('passwordError').textContent = 'Password must be at least 8 characters long';
+                password.classList.add('error');
+                isValid = false;
+            } else if (!/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/.test(password.value)) {
+                document.getElementById('passwordError').textContent = 'Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character';
+                password.classList.add('error');
+                isValid = false;
+            }
+
+            // Confirm password validation
+            if (password.value !== confirmPassword.value) {
+                document.getElementById('confirmPasswordError').textContent = 'Passwords do not match';
+                confirmPassword.classList.add('error');
+                isValid = false;
+            }
+
+            return isValid;
+        }
+
+        // Real-time validation
+        function checkPasswordStrength(password) {
+            const strengthDiv = document.getElementById('passwordStrength');
+            const hasUpperCase = /[A-Z]/.test(password);
+            const hasLowerCase = /[a-z]/.test(password);
+            const hasNumbers = /\d/.test(password);
+            const hasSpecialChar = /[@$!%*?&]/.test(password);
+            const isLongEnough = password.length >= 8;
+
+            let strength = 0;
+            strength += hasUpperCase ? 1 : 0;
+            strength += hasLowerCase ? 1 : 0;
+            strength += hasNumbers ? 1 : 0;
+            strength += hasSpecialChar ? 1 : 0;
+            strength += isLongEnough ? 1 : 0;
+
+            if (password.length === 0) {
+                strengthDiv.textContent = '';
+            } else if (strength < 3) {
+                strengthDiv.textContent = 'Password Strength: Weak';
+                strengthDiv.className = 'password-strength';
+                strengthDiv.style.background = 'red';
+            } else if (strength < 5) {
+                strengthDiv.textContent = 'Password Strength: Medium';
+                strengthDiv.className = 'password-strength';
+                strengthDiv.style.background = 'orange';
             } else {
-                this.setCustomValidity("");
+                strengthDiv.textContent = 'Password Strength: Strong';
+                strengthDiv.className = 'password-strength';
+                strengthDiv.style.background = 'green';
+            }
+        }
+
+        // Add real-time validation listeners
+        document.getElementById('user_id').addEventListener('input', function() {
+            const error = document.getElementById('userIdError');
+            if (this.value.trim() && !/^[a-zA-Z0-9]{5,10}$/.test(this.value)) {
+                error.textContent = 'User ID must be 5-10 characters and can only contain letters and numbers';
+                this.classList.add('error');
+            } else {
+                error.textContent = '';
+                this.classList.remove('error');
+            }
+        });
+
+        document.getElementById('username').addEventListener('input', function() {
+            const error = document.getElementById('usernameError');
+            if (this.value.trim() && !/^[a-zA-Z0-9_]{3,20}$/.test(this.value)) {
+                error.textContent = 'Username must be 3-20 characters and can only contain letters, numbers, and underscores';
+                this.classList.add('error');
+            } else {
+                error.textContent = '';
+                this.classList.remove('error');
+            }
+        });
+
+        document.getElementById('email').addEventListener('input', function() {
+            const error = document.getElementById('emailError');
+            const emailPattern = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+            if (this.value.trim() && !emailPattern.test(this.value)) {
+                error.textContent = 'Please enter a valid email address';
+                this.classList.add('error');
+            } else {
+                error.textContent = '';
+                this.classList.remove('error');
+            }
+        });
+
+        document.getElementById('password').addEventListener('input', function() {
+            checkPasswordStrength(this.value);
+            const error = document.getElementById('passwordError');
+            if (this.value && (this.value.length < 8 || !/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/.test(this.value))) {
+                error.textContent = 'Password must be at least 8 characters with uppercase, lowercase, number, and special character';
+                this.classList.add('error');
+            } else {
+                error.textContent = '';
+                this.classList.remove('error');
+            }
+        });
+
+        document.getElementById('confirm-password').addEventListener('input', function() {
+            const error = document.getElementById('confirmPasswordError');
+            const password = document.getElementById('password').value;
+            if (this.value && this.value !== password) {
+                error.textContent = 'Passwords do not match';
+                this.classList.add('error');
+            } else {
+                error.textContent = '';
+                this.classList.remove('error');
             }
         });
     </script>
