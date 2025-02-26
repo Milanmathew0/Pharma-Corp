@@ -1,4 +1,8 @@
 <?php
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+
 // Database connection details
 $servername = "localhost"; // Change this if your database is hosted elsewhere
 $username = "root"; // Change this to your database username
@@ -10,15 +14,10 @@ $conn = new mysqli($servername, $username, $password, $database);
 
 // Check connection
 if ($conn->connect_error) {
+    error_log("Database connection failed: " . $conn->connect_error);
     die("Connection failed: " . $conn->connect_error);
-} else {
-    // Add role column to users table if it doesn't exist
-    $checkColumn = "SHOW COLUMNS FROM users LIKE 'role'";
-    $result = $conn->query($checkColumn);
-    
-    if ($result->num_rows === 0) {
-        $addColumn = "ALTER TABLE users ADD COLUMN role ENUM('admin', 'staff', 'user') DEFAULT 'user'";
-        $conn->query($addColumn);
-    }
 }
+
+// Set charset to ensure proper encoding
+$conn->set_charset("utf8mb4");
 ?>

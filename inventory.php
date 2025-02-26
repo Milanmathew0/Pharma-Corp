@@ -11,21 +11,55 @@ if ($conn->connect_error) {
     die("Connection failed: " . $conn->connect_error);
 }
 
+// Add validation functions
+function validateInput($data) {
+    $data = trim($data);
+    $data = stripslashes($data);
+    $data = htmlspecialchars($data);
+    return $data;
+}
+
 // Handle stock updates
 if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['update_stock'])) {
-    $medicine_id = $_POST['medicine_id'];
-    $new_quantity = $_POST['new_quantity'];
+    $errors = [];
     
-    $update_sql = "UPDATE Medicines SET stock_quantity = ? WHERE medicine_id = ?";
-    $stmt = $conn->prepare($update_sql);
-    $stmt->bind_param("ii", $new_quantity, $medicine_id);
-    
-    if ($stmt->execute()) {
-        $success_message = "Stock updated successfully!";
-    } else {
-        $error_message = "Error updating stock: " . $conn->error;
+    // Validate medicine_id
+    $medicine_id = validateInput($_POST['medicine_id']);
+    if (!is_numeric($medicine_id) || $medicine_id <= 0) {
+        $errors[] = "Invalid medicine ID";
     }
-    $stmt->close();
+    
+    // Validate new_quantity
+    $new_quantity = validateInput($_POST['new_quantity']);
+    if (!is_numeric($new_quantity) || $new_quantity < 0) {
+        $errors[] = "Quantity must be a positive number";
+    }
+    
+    // Check if medicine exists
+    $check_sql = "SELECT * FROM Medicines WHERE medicine_id = ?";
+    $check_stmt = $conn->prepare($check_sql);
+    $check_stmt->bind_param("i", $medicine_id);
+    $check_stmt->execute();
+    $check_result = $check_stmt->get_result();
+    
+    if ($check_result->num_rows === 0) {
+        $errors[] = "Medicine not found";
+    }
+    
+    if (empty($errors)) {
+        $update_sql = "UPDATE Medicines SET stock_quantity = ? WHERE medicine_id = ?";
+        $stmt = $conn->prepare($update_sql);
+        $stmt->bind_param("ii", $new_quantity, $medicine_id);
+        
+        if ($stmt->execute()) {
+            $success_message = "Stock updated successfully!";
+        } else {
+            $error_message = "Error updating stock: " . $conn->error;
+        }
+        $stmt->close();
+    } else {
+        $error_message = implode("<br>", $errors);
+    }
 }
 
 // Fetch all medicines
@@ -40,6 +74,7 @@ $result = $conn->query($sql);
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Pharmacy Inventory Control</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.css">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 </head>
 <body class="bg-gray-100">
     <div class="container mx-auto px-4 py-8">
@@ -153,11 +188,42 @@ $result = $conn->query($sql);
     </div>
 
     <script>
-    // Add confirmation before updating stock
-    document.querySelectorAll('form').forEach(form => {
-        form.addEventListener('submit', (e) => {
+    $(document).ready(function() {
+        // Client-side validation
+        $('form').on('submit', function(e) {
+            const quantityInput = $(this).find('input[name="new_quantity"]');
+            const quantity = parseInt(quantityInput.val());
+            let errors = [];
+
+            // Validate quantity
+            if (isNaN(quantity) || quantity < 0) {
+                errors.push("Quantity must be a positive number");
+                quantityInput.addClass('border-red-500');
+            } else {
+                quantityInput.removeClass('border-red-500');
+            }
+
+            // If there are errors, prevent form submission
+            if (errors.length > 0) {
+                e.preventDefault();
+                alert(errors.join("\n"));
+                return false;
+            }
+
+            // Confirmation dialog
             if (!confirm('Are you sure you want to update this stock quantity?')) {
                 e.preventDefault();
+                return false;
+            }
+        });
+
+        // Real-time validation on input
+        $('input[name="new_quantity"]').on('input', function() {
+            const quantity = parseInt($(this).val());
+            if (isNaN(quantity) || quantity < 0) {
+                $(this).addClass('border-red-500');
+            } else {
+                $(this).removeClass('border-red-500');
             }
         });
     });

@@ -3,14 +3,15 @@ session_start();
 include "connect.php";
 
 // Check if user is logged in and is an admin
-if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'Admin') {
+if (!isset($_SESSION['role']) || strtolower($_SESSION['role']) !== 'admin') {
+    error_log("Access denied to admin dashboard - Current role: " . ($_SESSION['role'] ?? 'no role set'));
     header("Location: login.php");
     exit();
 }
 
 // Get admin name from database
 $email = $_SESSION['email'];
-$stmt = $conn->prepare("SELECT username FROM users WHERE email = ? AND role = 'Admin'");
+$stmt = $conn->prepare("SELECT username FROM users WHERE email = ? AND LOWER(role) = 'admin'");
 $stmt->bind_param("s", $email);
 $stmt->execute();
 $result = $stmt->get_result();
@@ -294,8 +295,17 @@ while ($row = $result->fetch_assoc()) {
                 <li><a class="dropdown-item" href="#profile">Profile</a></li>
                 <li><a class="dropdown-item" href="#settings">Settings</a></li>
                 <li><hr class="dropdown-divider"></li>
-                <li><a class="dropdown-item" href="login.php">Logout</a></li>
-              </ul>
+                <li>
+    <a class="dropdown-item" href="#" onclick="logout()">Logout</a>
+</li>
+
+<script>
+function logout() {
+    if (confirm("Are you sure you want to logout?")) {
+        window.location.href = "logout.php";
+    }
+}
+</script>              </ul>
             </li>
           </ul>
         </div>

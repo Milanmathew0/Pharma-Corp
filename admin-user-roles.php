@@ -13,16 +13,35 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['user_id']) && isset($_
     $user_id = $_POST['user_id'];
     $new_role = $_POST['new_role'];
     
-    // Only allow changing between staff and manager roles
-    if (in_array($new_role, ['staff', 'manager'])) {
-        $stmt = $conn->prepare("UPDATE users SET role = ? WHERE user_id = ? AND role != 'admin'");
-        $stmt->bind_param("si", $new_role, $user_id);
+    // Debug log
+    error_log("POST data received: " . print_r($_POST, true));
+    
+    // Validate user_id and new_role
+    if (!empty($user_id) && in_array($new_role, ['staff', 'manager'])) {
+        // First check if user exists and is not an admin
+        $check_sql = "SELECT role FROM users WHERE user_id = '$user_id'";
+        $check_result = $conn->query($check_sql);
+        error_log("Check query: " . $check_sql);
         
-        if ($stmt->execute()) {
-            $_SESSION['message'] = "User role updated successfully!";
+        if ($check_result && $check_result->num_rows > 0) {
+            // Update the specific user's role
+            $update_sql = "UPDATE users SET role = '$new_role' WHERE user_id = '$user_id'";
+            error_log("Update query: " . $update_sql);
+            
+            if ($conn->query($update_sql)) {
+                $_SESSION['message'] = "User role updated successfully!";
+                error_log("Role updated successfully for user ID: $user_id to $new_role");
+            } else {
+                $_SESSION['error'] = "Error updating user role: " . $conn->error;
+                error_log("MySQL Error: " . $conn->error);
+            }
         } else {
-            $_SESSION['error'] = "Error updating user role!";
+            $_SESSION['error'] = "User not found!";
+            error_log("User not found with ID: $user_id");
         }
+    } else {
+        $_SESSION['error'] = "Invalid user ID or role! (ID: $user_id, Role: $new_role)";
+        error_log("Validation failed - User ID: $user_id, Role: $new_role");
     }
     
     header("Location: admin-user-roles.php");
@@ -30,10 +49,13 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['user_id']) && isset($_
 }
 
 // Get all users except admins
-$result = $conn->query("SELECT user_id, username, email, role FROM users WHERE role != 'admin' ORDER BY username");
+$result = $conn->query("SELECT * FROM users ORDER BY username");
+error_log("Fetching users query executed");
+
 $users = [];
 while ($row = $result->fetch_assoc()) {
     $users[] = $row;
+    error_log("Found user: ID=" . $row['user_id'] . ", Role=" . $row['role']);
 }
 ?>
 
@@ -95,11 +117,11 @@ while ($row = $result->fetch_assoc()) {
                                     </span>
                                 </td>
                                 <td>
-                                    <form action="" method="POST" class="d-inline" onsubmit="return confirm('Are you sure you want to change this user\'s role?');">
-                                        <input type="hidden" name="user_id" value="<?= $user['user_id'] ?>">
+                                    <form action="<?php echo $_SERVER['PHP_SELF']; ?>" method="POST" class="d-inline" onsubmit="return confirm('Are you sure you want to change this user\'s role?');">
+                                        <input type="hidden" name="user_id" value="<?php echo $user['user_id']; ?>">
                                         <select name="new_role" class="form-select form-select-sm d-inline-block w-auto me-2">
-                                            <option value="staff" <?= $user['role'] === 'staff' ? 'selected' : '' ?>>Staff</option>
-                                            <option value="manager" <?= $user['role'] === 'manager' ? 'selected' : '' ?>>Manager</option>
+                                            <option value="staff" <?php echo $user['role'] === 'staff' ? 'selected' : ''; ?>>Staff</option>
+                                            <option value="manager" <?php echo $user['role'] === 'manager' ? 'selected' : ''; ?>>Manager</option>
                                         </select>
                                         <button type="submit" class="btn btn-warning btn-sm">
                                             <i class="bi bi-arrow-repeat"></i>

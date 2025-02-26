@@ -2,21 +2,19 @@
 session_start();
 include "connect.php"; // Database connection
 
-// First, create the staff_requests table if it doesn't exist
-$createTable = "CREATE TABLE IF NOT EXISTS staff_requests (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    username VARCHAR(100) NOT NULL,
-    email VARCHAR(100) UNIQUE NOT NULL,
-    password VARCHAR(255) NOT NULL,
-    status ENUM('pending', 'approved', 'rejected') DEFAULT 'pending',
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-)";
-if (!$conn->query($createTable)) {
-    die("Error creating table: " . $conn->error);
+// First, add status column if it doesn't exist
+$alterTable = "ALTER TABLE users 
+               ADD COLUMN IF NOT EXISTS status ENUM('pending', 'approved', 'rejected') 
+               DEFAULT 'pending' AFTER role";
+try {
+    $conn->query($alterTable);
+} catch (Exception $e) {
+    // Column might already exist, continue
 }
 
 $message = "";
 $errors = [];
+
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $username = trim($_POST['username']);
     $email = trim($_POST['email']);
@@ -54,23 +52,18 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     if (empty($errors)) {
         $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
 
-        // Check if email already exists in users or staff_requests
-        $checkSql = "SELECT 1 FROM (
-                        SELECT email FROM users WHERE email = ?
-                        UNION ALL
-                        SELECT email FROM staff_requests WHERE email = ?
-                    ) AS combined_check";
-                    
+        // Check if email already exists in users table
+        $checkSql = "SELECT email FROM users WHERE email = ?";
         if ($stmt = $conn->prepare($checkSql)) {
-            $stmt->bind_param("ss", $email, $email);
+            $stmt->bind_param("s", $email);
             $stmt->execute();
             $result = $stmt->get_result();
             
             if ($result->num_rows > 0) {
-                $message = "<div class='alert alert-danger'>Email already exists or request is pending!</div>";
+                $message = "<div class='alert alert-danger'>Email already exists!</div>";
             } else {
-                // Create staff request
-                $insertSql = "INSERT INTO staff_requests (username, email, password, status) VALUES (?, ?, ?, 'pending')";
+                // Insert into users table
+                $insertSql = "INSERT INTO users (name, email, password, role) VALUES (?, ?, ?, 'Staff')";
                 if ($insertStmt = $conn->prepare($insertSql)) {
                     $insertStmt->bind_param("sss", $username, $email, $hashedPassword);
                     

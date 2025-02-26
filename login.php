@@ -1,7 +1,5 @@
 <?php
 session_start();
-error_reporting(E_ALL);
-ini_set('display_errors', 1);
 
 // Database connection details
 $host = 'localhost';
@@ -14,77 +12,65 @@ try {
     $pdo = new PDO("mysql:host=$host;dbname=$dbname", $username, $password);
     $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
-    // Check if admin exists
-    $stmt = $pdo->query("SELECT COUNT(*) FROM users WHERE role = 'admin'");
-    $adminCount = $stmt->fetchColumn();
-
-    if ($adminCount == 0) {
-        // Create admin account if it doesn't exist
-        $adminEmail = 'admin@admin.com';
-        $adminPassword = password_hash('admin123', PASSWORD_DEFAULT);
-        $adminName = 'Administrator';
-        
-        $stmt = $pdo->prepare("INSERT INTO users (name, email, password, role) VALUES (?, ?, ?, 'admin')");
-        $stmt->execute([$adminName, $adminEmail, $adminPassword]);
-        echo "Admin account created successfully.<br>";
-    }
-
-} catch (PDOException $e) {
-    die("Connection/Setup failed: " . $e->getMessage());
-}
-
-if ($_SERVER["REQUEST_METHOD"] == "POST") {
-    $email = trim($_POST["email"]);
-    $password = trim($_POST["password"]);
-    $error = "";
-
-    echo "<div style='background: #f0f0f0; padding: 10px; margin: 10px;'>";
-    echo "Login attempt with email: " . htmlspecialchars($email) . "<br>";
-
-    try {
-        // Check users table structure
-        $stmt = $pdo->query("DESCRIBE users");
-        echo "Users table structure:<pre>";
-        print_r($stmt->fetchAll(PDO::FETCH_ASSOC));
-        echo "</pre>";
+    if ($_SERVER["REQUEST_METHOD"] == "POST") {
+        $email = trim($_POST["email"]);
+        $password = trim($_POST["password"]);
+        $error = "";
 
         // Check if user exists
         $stmt = $pdo->prepare("SELECT * FROM users WHERE email = ?");
         $stmt->execute([$email]);
         $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
-        echo "User data found:<pre>";
-        print_r($user);
-        echo "</pre>";
-
-        if ($user) {
-            echo "Password verification result: " . (password_verify($password, $user['password']) ? 'true' : 'false') . "<br>";
-            echo "User role: " . $user['role'] . "<br>";
-        }
-
-        if ($user && $user['role'] === 'Admin' && password_verify($password, $user['password'])) {
-            // Admin login successful
-            $_SESSION['user_id'] = $user['user_id'];
-            $_SESSION['email'] = $user['email'];
-            $_SESSION['role'] = 'Admin';
-            $_SESSION['admin_name'] = $user['name'];
+        if ($user && password_verify($password, $user['password'])) {
+            // Check if user is staff and verify status
+            if ($user['role'] === 'Staff') {
+                if ($user['status'] !== 'approved') {
+                    $error = "Your staff account is pending approval";
+                }
+            }
             
-            echo "Session data set:<pre>";
-            print_r($_SESSION);
-            echo "</pre>";
-            
-            echo "Redirecting to admin dashboard...<br>";
-            header("Location: admin-dashboard.php");
-            exit();
+            if (empty($error)) {
+                // Login successful
+                $_SESSION['user_id'] = $user['user_id'];
+                $_SESSION['email'] = $user['email'];
+                $_SESSION['role'] = $user['role'];
+                $_SESSION['name'] = $user['name'];
+                $_SESSION['status'] = $user['status'];
+                
+                // Debug information
+                error_log("User Role: " . $user['role']);
+                error_log("Session Data: " . print_r($_SESSION, true));
+                
+                // Redirect based on role
+                switch($user['role']) {
+                    case 'Admin':
+                        header("Location: admin-dashboard.php");
+                        break;
+                    case 'Manager':
+                        header("Location: manager-dashboard.php");
+                        break;
+                    case 'Staff':
+                        header("Location: staff-dashboard.php");
+                        break;
+                    case 'Customer':
+                        header("Location: customer-dashboard.php");
+                        break;
+                    default:
+                        $error = "Invalid user role";
+                        break;
+                }
+                if (empty($error)) {
+                    exit();
+                }
+            }
         } else {
-            $error = "Invalid email or password for admin login";
+            $error = "Invalid email or password";
         }
-
-    } catch (PDOException $e) {
-        $error = "Database error: " . $e->getMessage();
-        echo $error;
     }
-    echo "</div>";
+} catch(PDOException $e) {
+    $error = "Connection failed: " . $e->getMessage();
+    error_log("Database Error: " . $e->getMessage());
 }
 ?>
 

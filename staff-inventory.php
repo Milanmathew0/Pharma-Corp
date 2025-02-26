@@ -1,4 +1,5 @@
 <?php
+session_start();
 // Database connection
 $servername = "localhost";
 $username = "root";
@@ -86,7 +87,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['add_medicine'])) {
         $insert_sql = "INSERT INTO Medicines (name, batch_number, mfg_date, expiry_date, stock_quantity, price_per_unit, company) 
                        VALUES (?, ?, ?, ?, ?, ?, ?)";
         $stmt = $conn->prepare($insert_sql);
-        $stmt->bind_param("sssidds", $name, $batch_number, $mfg_date, $expiry_date, $stock_quantity, $price_per_unit, $company);
+        $stmt->bind_param("ssssdds", $name, $batch_number, $mfg_date, $expiry_date, $stock_quantity, $price_per_unit, $company);
         
         if ($stmt->execute()) {
             $success_message = "Medicine added successfully!";

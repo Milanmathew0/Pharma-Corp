@@ -1,8 +1,8 @@
 <?php
 session_start();
 
-// Check if user is logged in and is staff
-if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'staff') {
+// Check if user is logged in, is staff, and is approved
+if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'Staff' || $_SESSION['status'] !== 'approved') {
     header("Location: login.php");
     exit();
 }
@@ -14,8 +14,23 @@ header("Pragma: no-cache");
 
 include "connect.php";
 
+// Initialize variables
+$pendingCount = 0;
+
+// Check if prescriptions table exists
+$tableExists = $conn->query("SHOW TABLES LIKE 'prescriptions'");
+if ($tableExists->num_rows > 0) {
+    // Get pending prescriptions count
+    $stmt = $conn->prepare("SELECT COUNT(*) as count FROM prescriptions WHERE status = 'pending'");
+    if ($stmt) {
+        $stmt->execute();
+        $result = $stmt->get_result();
+        $pendingCount = $result->fetch_assoc()['count'];
+    }
+}
+
 // Fetch customers from users table where role is 'user'
-$customers_query = "SELECT * FROM users WHERE role = 'user' ORDER BY user_id";
+$customers_query = "SELECT * FROM users WHERE role = 'customer' ORDER BY user_id";
 $customers_result = $conn->query($customers_query);
 
 if (!$customers_result) {
@@ -23,7 +38,7 @@ if (!$customers_result) {
 }
 
 // Get counts for stats
-$customer_count_query = "SELECT COUNT(*) as count FROM users WHERE role = 'user'";
+$customer_count_query = "SELECT COUNT(*) as count FROM users WHERE role = 'customer'";
 $customer_count_result = $conn->query($customer_count_query);
 
 if (!$customer_count_result) {
@@ -32,7 +47,7 @@ if (!$customer_count_result) {
 
 $customer_count = $customer_count_result->fetch_assoc();
 
-$low_stock_query = "SELECT COUNT(*) as count FROM Medicines WHERE stock_quantity <= 10";
+$low_stock_query = "SELECT COUNT(*) as count FROM medicines WHERE stock_quantity <= 10";
 $low_stock_result = $conn->query($low_stock_query);
 
 if (!$low_stock_result) {
@@ -41,7 +56,7 @@ if (!$low_stock_result) {
 
 $low_stock = $low_stock_result->fetch_assoc();
 
-$total_medicines_query = "SELECT COUNT(*) as count FROM Medicines";
+$total_medicines_query = "SELECT COUNT(*) as count FROM medicines";
 $total_medicines_result = $conn->query($total_medicines_query);
 
 if (!$total_medicines_result) {
@@ -50,7 +65,7 @@ if (!$total_medicines_result) {
 
 $total_medicines = $total_medicines_result->fetch_assoc();
 
-$expiring_soon_query = "SELECT COUNT(*) as count FROM Medicines WHERE expiry_date <= DATE_ADD(CURRENT_DATE, INTERVAL 30 DAY)";
+$expiring_soon_query = "SELECT COUNT(*) as count FROM medicines WHERE expiry_date <= DATE_ADD(CURRENT_DATE, INTERVAL 30 DAY)";
 $expiring_soon_result = $conn->query($expiring_soon_query);
 
 if (!$expiring_soon_result) {
@@ -58,6 +73,7 @@ if (!$expiring_soon_result) {
 }
 
 $expiring_soon = $expiring_soon_result->fetch_assoc();
+
 ?>
 
 <!DOCTYPE html>
@@ -315,14 +331,15 @@ $expiring_soon = $expiring_soon_result->fetch_assoc();
                                 <thead>
                                     <tr>
                                         <th>ID</th>
+                                        <th>Name</th>
                                         <th>Email</th>
-                                        <th>Role</th>
+                                        <th>Phone</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     <?php 
-                                    // Fetch all users except admin
-                                    $users_query = "SELECT user_id, email, role FROM users WHERE role != 'admin' ORDER BY user_id";
+                                    // Fetch only customers (role = 'customer')
+                                    $users_query = "SELECT user_id, name, email, phone FROM users WHERE role = 'customer' ORDER BY user_id";
                                     $users_result = $conn->query($users_query);
                                     
                                     if ($users_result) {
@@ -330,17 +347,14 @@ $expiring_soon = $expiring_soon_result->fetch_assoc();
                                     ?>
                                     <tr>
                                         <td><?= htmlspecialchars($user['user_id']) ?></td>
+                                        <td><?= htmlspecialchars($user['name']) ?></td>
                                         <td><?= htmlspecialchars($user['email']) ?></td>
-                                        <td>
-                                            <span class="badge <?= $user['role'] === 'staff' ? 'bg-info' : 'bg-success' ?>">
-                                                <?= ucfirst(htmlspecialchars($user['role'])) ?>
-                                            </span>
-                                        </td>
+                                        <td><?= htmlspecialchars($user['phone']) ?></td>
                                     </tr>
                                     <?php 
                                         endwhile;
                                     } else {
-                                        echo "<tr><td colspan='5' class='text-center'>Error loading users: " . $conn->error . "</td></tr>";
+                                        echo "<tr><td colspan='4' class='text-center'>Error loading customers: " . $conn->error . "</td></tr>";
                                     }
                                     ?>
                                 </tbody>
@@ -390,6 +404,23 @@ $expiring_soon = $expiring_soon_result->fetch_assoc();
                         <p class="card-text">Monitor stock levels, handle expiry dates, and manage inventory.</p>
                         <a href="staff-stock.php" class="btn btn-info">
                             <i class="bi bi-box-seam"></i> Manage Stock
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Manage Prescriptions -->
+            <div class="col-md-4">
+                <div class="card h-100 feature-card">
+                    <div class="card-body text-center">
+                        <i class="bi bi-file-medical icon-large text-primary"></i>
+                        <h5 class="card-title">Manage Prescriptions</h5>
+                        <p class="card-text">Review and manage customer prescription uploads.</p>
+                        <a href="manage-prescriptions.php" class="btn btn-primary">
+                            <i class="bi bi-file-earmark-medical"></i> View Prescriptions
+                            <?php if ($pendingCount > 0): ?>
+                                <span class="badge bg-danger"><?= $pendingCount ?> Pending</span>
+                            <?php endif; ?>
                         </a>
                     </div>
                 </div>
