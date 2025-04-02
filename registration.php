@@ -13,14 +13,13 @@ try {
     $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
     if ($_SERVER["REQUEST_METHOD"] == "POST") {
-        $user_id = trim($_POST['user_id']);
         $username = trim($_POST['username']);
         $email = trim($_POST['email']);
         $password = trim($_POST['password']);
         $confirmPassword = trim($_POST['confirm-password']);
 
         // Enhanced server-side validation
-        if (empty($user_id) || empty($username) || empty($email) || empty($password)) {
+        if (empty($username) || empty($email) || empty($password)) {
             $_SESSION['error'] = "All fields are required";
             header("Location: registration.php");
             exit();
@@ -36,13 +35,6 @@ try {
         // Validate username (alphanumeric and underscores only, 3-20 characters)
         if (!preg_match('/^[a-zA-Z0-9_]{3,20}$/', $username)) {
             $_SESSION['error'] = "Username must be 3-20 characters and can only contain letters, numbers, and underscores";
-            header("Location: registration.php");
-            exit();
-        }
-
-        // Validate user_id (alphanumeric, 5-10 characters)
-        if (!preg_match('/^[a-zA-Z0-9]{5,10}$/', $user_id)) {
-            $_SESSION['error'] = "User ID must be 5-10 characters and can only contain letters and numbers";
             header("Location: registration.php");
             exit();
         }
@@ -67,15 +59,6 @@ try {
             exit();
         }
 
-        // Check if user_id already exists
-        $stmt = $pdo->prepare("SELECT COUNT(*) FROM users WHERE user_id = ?");
-        $stmt->execute([$user_id]);
-        if ($stmt->fetchColumn() > 0) {
-            $_SESSION['error'] = "User ID already exists";
-            header("Location: registration.php");
-            exit();
-        }
-
         // Check if email already exists
         $stmt = $pdo->prepare("SELECT COUNT(*) FROM users WHERE email = ?");
         $stmt->execute([$email]);
@@ -84,6 +67,12 @@ try {
             header("Location: registration.php");
             exit();
         }
+
+        // Generate new user_id
+        $stmt = $pdo->query("SELECT MAX(CAST(SUBSTRING(user_id, 2) AS UNSIGNED)) as max_id FROM users");
+        $result = $stmt->fetch(PDO::FETCH_ASSOC);
+        $next_id = ($result['max_id'] ?? 0) + 1;
+        $user_id = 'U' . str_pad($next_id, 4, '0', STR_PAD_LEFT);
 
         // Hash the password
         $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
@@ -116,7 +105,7 @@ try {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Professional Registration</title>
+    <title>Registration</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
@@ -259,16 +248,6 @@ try {
         ?>
         <form action="" method="post" id="registrationForm" onsubmit="return validateForm()">
             <div class="form-group">
-                <label for="user_id">User ID</label>
-                <input type="text" id="user_id" name="user_id" required 
-                       placeholder="Enter your user ID"
-                       pattern="[a-zA-Z0-9]{5,10}"
-                       title="User ID must be 5-10 characters and can only contain letters and numbers">
-                <i class="fas fa-user"></i>
-                <small class="error-message" id="userIdError"></small>
-            </div>
-
-            <div class="form-group">
                 <label for="username">Username</label>
                 <input type="text" id="username" name="username" required 
                        placeholder="Choose a username"
@@ -295,7 +274,6 @@ try {
                            placeholder="Create a password"
                            minlength="8"
                            title="Password must be at least 8 characters long">
-                    <i class="fas fa-lock"></i>
                     <i class="fas fa-eye toggle-password"></i>
                 </div>
                 <small class="error-message" id="passwordError"></small>
@@ -307,7 +285,6 @@ try {
                 <div class="password-container">
                     <input type="password" id="confirm-password" name="confirm-password" required 
                            placeholder="Confirm your password">
-                    <i class="fas fa-lock"></i>
                     <i class="fas fa-eye toggle-password"></i>
                 </div>
                 <small class="error-message" id="confirmPasswordError"></small>
@@ -337,7 +314,6 @@ try {
 
         function validateForm() {
             let isValid = true;
-            const userId = document.getElementById('user_id');
             const username = document.getElementById('username');
             const email = document.getElementById('email');
             const password = document.getElementById('password');
@@ -346,17 +322,6 @@ try {
             // Reset all error messages
             document.querySelectorAll('.error-message').forEach(el => el.textContent = '');
             document.querySelectorAll('input').forEach(el => el.classList.remove('error'));
-
-            // User ID validation
-            if (!userId.value.trim()) {
-                document.getElementById('userIdError').textContent = 'User ID is required';
-                userId.classList.add('error');
-                isValid = false;
-            } else if (!/^[a-zA-Z0-9]{5,10}$/.test(userId.value)) {
-                document.getElementById('userIdError').textContent = 'User ID must be 5-10 characters and can only contain letters and numbers';
-                userId.classList.add('error');
-                isValid = false;
-            }
 
             // Username validation
             if (!username.value.trim()) {
@@ -440,17 +405,6 @@ try {
         }
 
         // Add real-time validation listeners
-        document.getElementById('user_id').addEventListener('input', function() {
-            const error = document.getElementById('userIdError');
-            if (this.value.trim() && !/^[a-zA-Z0-9]{5,10}$/.test(this.value)) {
-                error.textContent = 'User ID must be 5-10 characters and can only contain letters and numbers';
-                this.classList.add('error');
-            } else {
-                error.textContent = '';
-                this.classList.remove('error');
-            }
-        });
-
         document.getElementById('username').addEventListener('input', function() {
             const error = document.getElementById('usernameError');
             if (this.value.trim() && !/^[a-zA-Z0-9_]{3,20}$/.test(this.value)) {

@@ -2,29 +2,18 @@
 session_start();
 include "connect.php";
 
-// Check if user is admin
-// if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'admin') {
-//     header("Location: login.php");
-//     exit();
-// }
-
-// Handle role update
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['user_id']) && isset($_POST['new_role'])) {
     $user_id = $_POST['user_id'];
     $new_role = $_POST['new_role'];
     
-    // Debug log
     error_log("POST data received: " . print_r($_POST, true));
     
-    // Validate user_id and new_role
     if (!empty($user_id) && in_array($new_role, ['staff', 'manager'])) {
-        // First check if user exists and is not an admin
         $check_sql = "SELECT role FROM users WHERE user_id = '$user_id'";
         $check_result = $conn->query($check_sql);
         error_log("Check query: " . $check_sql);
         
         if ($check_result && $check_result->num_rows > 0) {
-            // Update the specific user's role
             $update_sql = "UPDATE users SET role = '$new_role' WHERE user_id = '$user_id'";
             error_log("Update query: " . $update_sql);
             
@@ -48,14 +37,14 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['user_id']) && isset($_
     exit();
 }
 
-// Get all users except admins
-$result = $conn->query("SELECT * FROM users ORDER BY username");
+$result = $conn->query("SELECT * FROM users WHERE role != 'Admin' ORDER BY username");
 error_log("Fetching users query executed");
 
-$users = [];
-while ($row = $result->fetch_assoc()) {
-    $users[] = $row;
-    error_log("Found user: ID=" . $row['user_id'] . ", Role=" . $row['role']);
+if ($result) {
+    $users = $result->fetch_all(MYSQLI_ASSOC);
+} else {
+    $users = [];
+    error_log("Error fetching users: " . $conn->error);
 }
 ?>
 
@@ -64,7 +53,7 @@ while ($row = $result->fetch_assoc()) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin - User Role Management</title>
+    <title>Manage User Roles</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.2/font/bootstrap-icons.css" rel="stylesheet">
     <style>

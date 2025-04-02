@@ -216,22 +216,28 @@ while ($row = $result->fetch_assoc()) {
                                             </span>
                                         </td>
                                         <td>
-                                            <form method="POST" style="display: inline;">
-                                                <input type="hidden" name="user_id" value="<?= $request['user_id'] ?>">
-                                                <?php if ($request['status'] === 'pending'): ?>
-                                                    <button type="submit" name="action" value="approve" class="btn btn-success btn-sm">
-                                                        <i class="bi bi-check-circle"></i> Approve
-                                                    </button>
-                                                    <button type="submit" name="action" value="reject" class="btn btn-danger btn-sm">
-                                                        <i class="bi bi-x-circle"></i> Reject
-                                                    </button>
-                                                <?php elseif ($request['status'] === 'approved'): ?>
-                                                    <button type="submit" name="action" value="remove" class="btn btn-danger btn-sm">
-                                                        <i class="bi bi-trash"></i> Remove
-                                                    </button>
-                                                <?php endif; ?>
-                                            </form>
-                                        </td>
+    <?php if ($request['status'] === 'pending'): ?>
+        <form method="POST" style="display: inline;">
+            <input type="hidden" name="user_id" value="<?= $request['user_id'] ?>">
+            <button type="submit" name="action" value="approve" class="btn btn-success btn-sm">
+                <i class="bi bi-check-circle"></i> Approve
+            </button>
+        </form>
+        <form method="POST" style="display: inline;">
+            <input type="hidden" name="user_id" value="<?= $request['user_id'] ?>">
+            <button type="submit" name="action" value="reject" class="btn btn-danger btn-sm">
+                <i class="bi bi-x-circle"></i> Reject
+            </button>
+        </form>
+    <?php elseif ($request['status'] === 'approved'): ?>
+        <form method="POST" style="display: inline;">
+            <input type="hidden" name="user_id" value="<?= $request['user_id'] ?>">
+            <button type="submit" name="action" value="remove" class="btn btn-danger btn-sm">
+                <i class="bi bi-trash"></i> Remove
+            </button>
+        </form>
+    <?php endif; ?>
+</td>
                                     </tr>
                                 <?php endforeach; ?>
                             </tbody>

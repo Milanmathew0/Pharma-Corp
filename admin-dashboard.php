@@ -2,14 +2,12 @@
 session_start();
 include "connect.php";
 
-// Check if user is logged in and is an admin
 if (!isset($_SESSION['role']) || strtolower($_SESSION['role']) !== 'admin') {
     error_log("Access denied to admin dashboard - Current role: " . ($_SESSION['role'] ?? 'no role set'));
     header("Location: login.php");
     exit();
 }
 
-// Get admin name from database
 $email = $_SESSION['email'];
 $stmt = $conn->prepare("SELECT username FROM users WHERE email = ? AND LOWER(role) = 'admin'");
 $stmt->bind_param("s", $email);
@@ -18,16 +16,14 @@ $result = $stmt->get_result();
 $admin = $result->fetch_assoc();
 $admin_name = $admin['username'];
 
-// Fetch total users count with role breakdown
 $result = $conn->query("SELECT role, COUNT(*) as count FROM users GROUP BY role");
 $user_roles = array();
-$total_users = 0; // Initialize total users counter
+$total_users = 0;
 while ($row = $result->fetch_assoc()) {
     $user_roles[$row['role']] = $row['count'];
-    $total_users += $row['count']; // Add each role count to total
+    $total_users += $row['count'];
 }
 
-// Fetch total medicines count and value
 $result = $conn->query("SELECT 
     COUNT(*) as total_medicines,
     SUM(stock_quantity * price_per_unit) as total_value,
@@ -35,7 +31,6 @@ $result = $conn->query("SELECT
     FROM Medicines");
 $medicine_stats = $result->fetch_assoc();
 
-// Fetch order statistics
 $result = $conn->query("SELECT 
     COUNT(*) as total_orders,
     SUM(total_amount) as total_revenue,
@@ -43,47 +38,87 @@ $result = $conn->query("SELECT
     COUNT(CASE WHEN status = 'completed' THEN 1 END) as completed_orders,
     COUNT(CASE WHEN status = 'pending' THEN 1 END) as pending_orders
     FROM orders");
-$order_stats = $result->fetch_assoc();
 
-// Fetch low stock items count (assuming threshold of 10)
+if (!$result) {
+    error_log("Query failed: " . $conn->error);
+    $order_stats = [
+        'total_orders' => 0,
+        'total_revenue' => 0,
+        'avg_order_value' => 0,
+        'completed_orders' => 0,
+        'pending_orders' => 0
+    ];
+} else {
+    $order_stats = $result->fetch_assoc();
+}
+
 $result = $conn->query("SELECT COUNT(*) as low_stock FROM Medicines WHERE stock_quantity <= 10");
-$low_stock = $result->fetch_assoc()['low_stock'];
+if (!$result) {
+    error_log("Query failed: " . $conn->error);
+    $low_stock = 0;
+} else {
+    $low_stock = $result->fetch_assoc()['low_stock'];
+}
 
-// Fetch monthly sales
 $current_month = date('Y-m');
 $result = $conn->query("SELECT SUM(total_amount) as monthly_sales FROM orders WHERE DATE_FORMAT(order_date, '%Y-%m') = '$current_month'");
-$monthly_sales = $result->fetch_assoc()['monthly_sales'] ?: 0;
+if (!$result) {
+    error_log("Query failed: " . $conn->error);
+    $monthly_sales = 0;
+} else {
+    $monthly_sales = $result->fetch_assoc()['monthly_sales'] ?: 0;
+}
 
-// Fetch sales data for last 6 months
 $sales_data = array();
 $sales_labels = array();
 for ($i = 5; $i >= 0; $i--) {
     $month = date('Y-m', strtotime("-$i months"));
     $sales_labels[] = date('M', strtotime("-$i months"));
     $result = $conn->query("SELECT SUM(total_amount) as sales FROM orders WHERE DATE_FORMAT(order_date, '%Y-%m') = '$month'");
-    $sales_data[] = $result->fetch_assoc()['sales'] ?: 0;
+    if (!$result) {
+        error_log("Query failed for month $month: " . $conn->error);
+        $sales_data[] = 0;
+    } else {
+        $sales_data[] = $result->fetch_assoc()['sales'] ?: 0;
+    }
 }
 
-// Fetch inventory status
 $result = $conn->query("SELECT 
     SUM(CASE WHEN stock_quantity > 10 THEN 1 ELSE 0 END) as in_stock,
     SUM(CASE WHEN stock_quantity <= 10 AND stock_quantity > 0 THEN 1 ELSE 0 END) as low_stock,
     SUM(CASE WHEN stock_quantity = 0 THEN 1 ELSE 0 END) as out_of_stock
     FROM Medicines");
-$inventory_status = $result->fetch_assoc();
-
-// Fetch recent activities
-$result = $conn->query("SELECT activity_type, description, created_at FROM activity_log ORDER BY created_at DESC LIMIT 3");
-$recent_activities = array();
-while ($row = $result->fetch_assoc()) {
-    $recent_activities[] = $row;
+if (!$result) {
+    error_log("Inventory status query failed: " . $conn->error);
+    $inventory_status = [
+        'in_stock' => 0,
+        'low_stock' => 0,
+        'out_of_stock' => 0
+    ];
+} else {
+    $inventory_status = $result->fetch_assoc();
 }
 
-// Fetch low stock items for alerts
+$result = $conn->query("SELECT activity_type, description, created_at FROM activity_log ORDER BY created_at DESC LIMIT 3");
+if (!$result) {
+    error_log("Activity log query failed: " . $conn->error);
+    $recent_activities = array();
+} else {
+    $recent_activities = array();
+    while ($row = $result->fetch_assoc()) {
+        $recent_activities[] = $row;
+    }
+}
+
 $result = $conn->query("SELECT name, stock_quantity as quantity FROM Medicines WHERE stock_quantity <= 10 ORDER BY stock_quantity ASC LIMIT 3");
-$low_stock_alerts = array();
-while ($row = $result->fetch_assoc()) {
-    $low_stock_alerts[] = $row;
+if (!$result) {
+    error_log("Low stock alerts query failed: " . $conn->error);
+    $low_stock_alerts = array();
+} else {
+    $low_stock_alerts = array();
+    while ($row = $result->fetch_assoc()) {
+        $low_stock_alerts[] = $row;
+    }
 }
 
 ?>
@@ -240,7 +275,6 @@ while ($row = $result->fetch_assoc()) {
     </style>
   </head>
   <body>
-    <!-- Navigation -->
     <nav class="navbar navbar-expand-lg navbar-dark">
       <div class="container">
         <a class="navbar-brand" href="#">Admin Dashboard</a>
@@ -256,7 +290,7 @@ while ($row = $result->fetch_assoc()) {
           <ul class="navbar-nav ms-auto">
             <li class="nav-item dropdown">
               <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
-                Staff Management
+                Users Management
               </a>
               <ul class="dropdown-menu">
                 <li><a class="dropdown-item" href="admin-staff-requests.php">Staff Requests</a></li>
@@ -312,7 +346,6 @@ function logout() {
       </div>
     </nav>
 
-    <!-- Dashboard Header -->
     <section class="dashboard-header">
       <div class="container">
         <div class="row align-items-center">
@@ -324,10 +357,8 @@ function logout() {
       </div>
     </section>
 
-    <!-- Main Content -->
     <div class="main-content">
       <div class="container">
-        <!-- Stats Cards -->
         <div class="row mb-4">
           <div class="col-xl-3 col-md-6 mb-4">
             <div class="card border-left-primary shadow h-100 py-2">
@@ -338,6 +369,7 @@ function logout() {
                     <div class="h5 mb-0 font-weight-bold text-gray-800"><?php echo $total_users; ?></div>
                     <div class="small text-muted">
                       Admin: <?php echo $user_roles['Admin'] ?? 0; ?><br>
+                      Staff: <?php echo $user_roles['Staff'] ?? 0; ?><br>
                       Customer: <?php echo $user_roles['Customer'] ?? 0; ?>
                     </div>
                   </div>
@@ -357,8 +389,8 @@ function logout() {
                     <div class="text-xs font-weight-bold text-success text-uppercase mb-1">Medicines</div>
                     <div class="h5 mb-0 font-weight-bold text-gray-800"><?php echo $medicine_stats['total_medicines']; ?></div>
                     <div class="small text-muted">
-                      Total Value: $<?php echo number_format($medicine_stats['total_value'], 2); ?><br>
-                      Avg Price: $<?php echo number_format($medicine_stats['avg_price'], 2); ?>
+                      Total Value: ₹<?php echo number_format($medicine_stats['total_value'], 2); ?><br>
+                      Avg Price: ₹<?php echo number_format($medicine_stats['avg_price'], 2); ?>
                     </div>
                   </div>
                   <div class="col-auto">
@@ -395,14 +427,13 @@ function logout() {
                 <div class="row no-gutters align-items-center">
                   <div class="col mr-2">
                     <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">Revenue</div>
-                    <div class="h5 mb-0 font-weight-bold text-gray-800">$<?php echo number_format($order_stats['total_revenue'], 2); ?></div>
+                    <div class="h5 mb-0 font-weight-bold text-gray-800">₹<?php echo number_format($order_stats['total_revenue'], 2); ?></div>
                     <div class="small text-muted">
-                      Avg Order: $<?php echo number_format($order_stats['avg_order_value'], 2); ?><br>
-                      Monthly: $<?php echo number_format($monthly_sales, 2); ?>
+                      Avg Order: ₹<?php echo number_format($order_stats['avg_order_value'], 2); ?><br>
+                      Monthly: ₹<?php echo number_format($monthly_sales, 2); ?>
                     </div>
                   </div>
                   <div class="col-auto">
-                    <i class="fas fa-dollar-sign fa-2x text-gray-300"></i>
                   </div>
                 </div>
               </div>
@@ -410,7 +441,6 @@ function logout() {
           </div>
         </div>
 
-        <!-- Charts Row -->
         <div class="row">
           <div class="col-xl-8">
             <div class="feature-card">
@@ -430,7 +460,6 @@ function logout() {
           </div>
         </div>
 
-        <!-- Activity Section -->
         <section class="activity-section">
           <div class="container">
             <div class="row">
@@ -472,12 +501,10 @@ function logout() {
       </div>
     </div>
 
-    <!-- Bootstrap JS and dependencies -->
     <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.min.js"></script>
 
     <script>
-      // Sales Chart
       const salesCtx = document.getElementById("salesChart").getContext("2d");
       new Chart(salesCtx, {
         type: "line",
@@ -502,7 +529,6 @@ function logout() {
         },
       });
 
-      // Inventory Chart
       const inventoryCtx = document
         .getElementById("inventoryChart")
         .getContext("2d");

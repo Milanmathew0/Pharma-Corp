@@ -52,7 +52,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     if (empty($errors)) {
         $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
 
-        // Check if email already exists in users table
+        // Check if email already exists
         $checkSql = "SELECT email FROM users WHERE email = ?";
         if ($stmt = $conn->prepare($checkSql)) {
             $stmt->bind_param("s", $email);
@@ -62,10 +62,16 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             if ($result->num_rows > 0) {
                 $message = "<div class='alert alert-danger'>Email already exists!</div>";
             } else {
+                // Generate new user_id
+                $stmt = $conn->query("SELECT MAX(CAST(SUBSTRING(user_id, 2) AS UNSIGNED)) as max_id FROM users");
+                $result = $stmt->fetch_assoc();
+                $next_id = ($result['max_id'] ?? 0) + 1;
+                $user_id = 'R' . str_pad($next_id, 4, '0', STR_PAD_LEFT);
+
                 // Insert into users table
-                $insertSql = "INSERT INTO users (name, email, password, role) VALUES (?, ?, ?, 'Staff')";
+                $insertSql = "INSERT INTO users (user_id, username, email, password, role, status) VALUES (?, ?, ?, ?, 'Staff', 'pending')";
                 if ($insertStmt = $conn->prepare($insertSql)) {
-                    $insertStmt->bind_param("sss", $username, $email, $hashedPassword);
+                    $insertStmt->bind_param("ssss", $user_id, $username, $email, $hashedPassword);
                     
                     if ($insertStmt->execute()) {
                         $message = "<div class='alert alert-success'>Registration request submitted! Please wait for admin approval.</div>";
@@ -78,8 +84,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 }
             }
             $stmt->close();
-        } else {
-            $message = "<div class='alert alert-danger'>Error checking email: " . $conn->error . "</div>";
         }
     }
 }
@@ -332,7 +336,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 <input type="email" name="email" id="email" required
                        pattern="[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$"
                        title="Please enter a valid email address"
-                       value="<?php echo isset($_POST['email']) ? htmlspecialchars($_POST['email']) : ''; ?>">
+                       +value="<?php echo isset($_POST['email']) ? htmlspecialchars($_POST['email']) : ''; ?>">
                 <i class="fas fa-envelope"></i>
                 <small class="error-message" id="emailError"></small>
             </div>

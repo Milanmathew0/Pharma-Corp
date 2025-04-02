@@ -35,7 +35,7 @@ try {
                 $_SESSION['user_id'] = $user['user_id'];
                 $_SESSION['email'] = $user['email'];
                 $_SESSION['role'] = $user['role'];
-                $_SESSION['name'] = $user['name'];
+                $_SESSION['username'] = $user['username'];
                 $_SESSION['status'] = $user['status'];
                 
                 // Debug information
@@ -236,6 +236,7 @@ try {
             </div>
 
             <button type="submit" class="btn-login">Sign In</button>
+            <a href="forgot_password.php">forgot password</a>
             
             <div class="register-link">
                 <p>Don't have an account? <a href="registration.php">Register</a></p>

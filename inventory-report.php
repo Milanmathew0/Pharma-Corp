@@ -73,16 +73,6 @@ $expired_count = 0;
                         <option value="low_stock" <?php echo $filter_type === 'low_stock' ? 'selected' : ''; ?>>Low Stock Items</option>
                     </select>
                 </div>
-                <div>
-                    <label class="block text-gray-700 mb-2">Start Date</label>
-                    <input type="date" name="start_date" value="<?php echo $start_date; ?>"
-                           class="w-full px-4 py-2 border rounded">
-                </div>
-                <div>
-                    <label class="block text-gray-700 mb-2">End Date</label>
-                    <input type="date" name="end_date" value="<?php echo $end_date; ?>"
-                           class="w-full px-4 py-2 border rounded">
-                </div>
                 <div class="flex items-end">
                     <button type="submit" class="bg-blue-500 text-white px-6 py-2 rounded hover:bg-blue-600">
                         Generate Report

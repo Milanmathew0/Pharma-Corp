@@ -1,49 +1,30 @@
 <?php
 session_start();
 
-// Check if user is logged in
-if (!isset($_SESSION['user_id'])) {
+// Check if user is logged in and is a customer
+if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'Customer') {
     header("Location: login.php");
     exit();
 }
 
-include "connect.php";
-
-// Create prescriptions table if it doesn't exist
-$create_table = "CREATE TABLE IF NOT EXISTS prescriptions (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    user_id INT NOT NULL,
-    file_name VARCHAR(255) NOT NULL,
-    file_path VARCHAR(255) NOT NULL,
-    file_type VARCHAR(10) NOT NULL,
-    upload_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    status ENUM('pending', 'approved', 'rejected') DEFAULT 'pending',
-    notes TEXT,
-    FOREIGN KEY (user_id) REFERENCES users(user_id)
-)";
-
-if (!$conn->query($create_table)) {
-    error_log("Error creating prescriptions table: " . $conn->error);
+// Set a default username if not set
+if (!isset($_SESSION['username'])) {
+    $_SESSION['username'] = 'Customer';
 }
 
-// Get user's prescriptions
-$prescriptions = [];
-$stmt = $conn->prepare("SELECT p.*, DATE_FORMAT(p.upload_date, '%M %d, %Y %h:%i %p') as formatted_date 
-                       FROM prescriptions p 
-                       WHERE p.user_id = ? 
-                       ORDER BY p.upload_date DESC 
-                       LIMIT 5");
+include "connect.php";
 
-if ($stmt) {
-    $stmt->bind_param("i", $_SESSION['user_id']);
-    if ($stmt->execute()) {
-        $result = $stmt->get_result();
-        $prescriptions = $result->fetch_all(MYSQLI_ASSOC);
-    } else {
-        error_log("Error executing prescription query: " . $stmt->error);
-    }
-} else {
-    error_log("Error preparing prescription query: " . $conn->error);
+// Add this near the top of the file, after include "connect.php"
+require_once 'vendor/autoload.php'; // Make sure to install pdfparser via composer
+use Smalot\PdfParser\Parser;
+use thiagoalessio\TesseractOCR\TesseractOCR;
+
+// Include the text extraction functionality
+require_once 'extract_text.php';
+
+// Clear the form submission flag when displaying the page
+if ($_SERVER["REQUEST_METHOD"] == "GET") {
+    unset($_SESSION['form_submitted']);
 }
 
 // Add cache control headers
@@ -265,6 +246,10 @@ header("Pragma: no-cache");
             font-size: 0.8rem;
         }
 
+        .prescription-upload .text-muted {
+            font-size: 0.8rem;
+        }
+
         .prescription-list {
             list-style: none;
             padding: 0;
@@ -343,6 +328,16 @@ header("Pragma: no-cache");
                 grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
             }
         }
+
+        .extracted-text-preview {
+            font-size: 0.9rem;
+            color: #666;
+            margin-top: 0.5rem;
+            padding: 0.5rem;
+            background: rgba(0, 0, 0, 0.05);
+            border-radius: 4px;
+            white-space: pre-line;
+        }
     </style>
 </head>
 <body>
@@ -350,12 +345,10 @@ header("Pragma: no-cache");
         <h1 style="color: white;"><i class="fas fa-clinic-medical"></i> Pharma-Corp</h1>
         <div class="nav-links">
             <a href="search-medicines.php" class="nav-link d-inline-block me-3" style="color: white;"><i class="fas fa-search"></i> Search Medicines</a>
-            <a href="#" class="nav-link d-inline-block me-3" style="color: white;"><i class="fas fa-shopping-cart"></i> Cart</a>
-            <a href="#" class="nav-link d-inline-block me-3" style="color: white;"><i class="fas fa-history"></i> Orders</a>
         </div>
         <div class="user-info">
             <i class="fas fa-user-circle"></i>
-            <span style="color: white;">Welcome, <?= htmlspecialchars($_SESSION['name'] ?? 'Customer') ?></span>
+            <span style="color: white;">Welcome, <?= htmlspecialchars($_SESSION['username']) ?></span>
             <a href="customer-profile.php" class="btn btn-info">
                 <i class="bi bi-person"></i> My Profile
             </a>
@@ -365,92 +358,9 @@ header("Pragma: no-cache");
         </div>
     </nav>
 
-    <div class="container">
-        <!-- Prescription Upload Card -->
-        <div class="card mb-4">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <div>
-                    <i class="fas fa-file-medical"></i>
-                    <h2 class="d-inline-block ms-2 mb-0">Prescriptions</h2>
-                </div>
-                <div class="prescription-stats">
-                    <?php if (!empty($prescriptions)): ?>
-                        <span class="badge bg-primary"><?= count($prescriptions) ?> Recent</span>
-                    <?php endif; ?>
-                </div>
-            </div>
-            <div class="card-content p-3">
-                <div class="prescription-upload" onclick="document.getElementById('prescriptionFile').click()">
-                    <i class="fas fa-cloud-upload-alt"></i>
-                    <h4>Drop your prescription here</h4>
-                    <p class="text-muted">or click to browse files</p>
-                    <input type="file" id="prescriptionFile" hidden accept=".jpg,.jpeg,.png,.gif,.pdf">
-                </div>
-                <div id="uploadProgress" class="progress">
-                    <div class="progress-bar progress-bar-striped progress-bar-animated"></div>
-                </div>
-                
-                <!-- Recent Prescriptions -->
-                <?php if (!empty($prescriptions)): ?>
-                    <h6 class="mt-3 mb-2">Recent Uploads</h6>
-                    <ul class="prescription-list">
-                        <?php foreach ($prescriptions as $prescription): ?>
-                            <li class="prescription-item">
-                                <div class="d-flex align-items-center">
-                                    <i class="<?= strpos($prescription['file_type'], 'pdf') !== false ? 'fas fa-file-pdf' : 'fas fa-file-image' ?>"></i>
-                                    <div>
-                                        <div class="text-truncate" style="max-width: 200px;">
-                                            <?= htmlspecialchars($prescription['file_name']) ?>
-                                        </div>
-                                        <small class="text-muted">
-                                            <?= $prescription['formatted_date'] ?>
-                                        </small>
-                                    </div>
-                                </div>
-                                <div class="prescription-status status-<?= $prescription['status'] ?>">
-                                    <i class="fas fa-<?= $prescription['status'] === 'pending' ? 'clock' : ($prescription['status'] === 'approved' ? 'check' : 'times') ?>"></i>
-                                    <?= ucfirst($prescription['status']) ?>
-                                </div>
-                            </li>
-                        <?php endforeach; ?>
-                    </ul>
-                <?php else: ?>
-                    <div class="text-center text-muted mt-3">
-                        <p>No prescriptions uploaded yet</p>
-                    </div>
-                <?php endif; ?>
-            </div>
-        </div>
+    
 
-        <!-- Order Tracking -->
-        <div class="card">
-            <div class="card-header">
-                <i class="fas fa-truck"></i>
-                <h2>Order Tracking</h2>
-            </div>
-            <div class="card-content">
-                <ul class="order-list">
-                    <li>
-                        <span><i class="fas fa-box"></i> Order #1234 - Amoxicillin</span>
-                        <span class="status status-pending">
-                            <i class="fas fa-clock"></i> Pending
-                        </span>
-                    </li>
-                    <li>
-                        <span><i class="fas fa-box"></i> Order #1235 - Paracetamol</span>
-                        <span class="status status-available">
-                            <i class="fas fa-check"></i> Available
-                        </span>
-                    </li>
-                    <li>
-                        <span><i class="fas fa-box"></i> Order #1236 - Aspirin</span>
-                        <span class="status status-processing">
-                            <i class="fas fa-cog fa-spin"></i> Processing
-                        </span>
-                    </li>
-                </ul>
-            </div>
-        </div>
+        
 
         <!-- Notifications -->
         <div class="card">
@@ -484,6 +394,9 @@ header("Pragma: no-cache");
                 </ul>
             </div>
         </div>
+        
+
+       
 
         <!-- Profile Management -->
         <div class="card">
@@ -506,9 +419,7 @@ header("Pragma: no-cache");
                                         <i class="fas fa-'. htmlspecialchars($icon) .'"></i>
                                         <h3>'. htmlspecialchars($medicine['name']) .'</h3>
                                         <p>Stock: '. htmlspecialchars($medicine['stock_quantity']) .'</p>
-                                        <button class="btn btn-primary">
-                                            <i class="fas fa-shopping-cart"></i> Purchase
-                                        </button>
+                                       
                                     </div>';
                             }
                             $result->free();
@@ -536,19 +447,7 @@ header("Pragma: no-cache");
                 </div>
             </div>
 
-            <!-- View Cart -->
-            <div class="col-md-4">
-                <div class="card h-100 feature-card">
-                    <div class="card-body text-center">
-                        <i class="bi bi-cart icon-large text-success"></i>
-                        <h5 class="card-title">Shopping Cart</h5>
-                        <p class="card-text">View and manage items in your shopping cart.</p>
-                        <a href="view_cart.php" class="btn btn-success">
-                            <i class="bi bi-cart"></i> View Cart
-                        </a>
-                    </div>
-                </div>
-            </div>
+           
 
             <!-- My Profile -->
             <div class="col-md-4">
@@ -564,87 +463,222 @@ header("Pragma: no-cache");
                 </div>
             </div>
         </div>
-    </div>
 
+        <!-- Prescription Submission Form -->
+        <div class="row mb-4">
+            <div class="col-md-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">Submit Prescription</h5>
+                    </div>
+                    <div class="card-body">
+                        <form id="prescriptionForm" action="submit_prescription.php" method="POST" enctype="multipart/form-data">
+                            <div class="mb-3">
+                                <label for="prescription_file" class="form-label">Upload Prescription Image/Document</label>
+                                <input type="file" class="form-control" id="prescription_file" name="prescription_file" 
+                                    accept="image/*,.pdf" onchange="previewFile()" required>
+                                <small class="text-muted">Accepted formats: Images (JPG, PNG) or PDF</small>
+                                <div class="progress mt-2" id="uploadProgress" style="display: none;">
+                                    <div class="progress-bar" role="progressbar" style="width: 0%"></div>
+                                </div>
+                                <div id="filePreview" class="mt-2" style="display: none;">
+                                    <img id="previewImage" src="" alt="Preview" style="max-width: 100%; max-height: 300px;">
+                                </div>
+                            </div>
+                            <div class="mb-3" id="extractedTextContainer" style="display: none;">
+                                <label class="form-label">Prescription Details (Extracted from Upload)</label>
+                                <div id="extractedText" class="extracted-text-preview form-control" style="min-height: 100px; overflow-y: auto;"></div>
+                                <input type="hidden" id="prescription_details" name="prescription_details">
+                                <div id="manualEntryFallback" style="display: none;">
+                                    <div class="alert alert-warning mt-2">
+                                        <i class="fas fa-exclamation-triangle"></i> 
+                                        Text extraction failed. Please enter prescription details manually below.
+                                    </div>
+                                    <textarea class="form-control mt-2" id="manual_prescription_details" 
+                                        rows="4" placeholder="Please enter your prescription details manually"></textarea>
+                                    <button type="button" class="btn btn-sm btn-outline-primary mt-2" 
+                                        onclick="useManualEntry()">Use This Text</button>
+                                </div>
+                            </div>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-file-earmark-medical"></i> Submit Prescription
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    
+
+    
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script>
-        document.getElementById('prescriptionFile').addEventListener('change', function(e) {
-            if (e.target.files.length > 0) {
-                const file = e.target.files[0];
-                const maxSize = 5 * 1024 * 1024; // 5MB
-
-                if (file.size > maxSize) {
-                    alert('File is too large. Maximum size is 5MB.');
-                    return;
+        function previewFile() {
+            const fileInput = document.getElementById('prescription_file');
+            const previewImage = document.getElementById('previewImage');
+            const filePreview = document.getElementById('filePreview');
+            const extractedTextContainer = document.getElementById('extractedTextContainer');
+            const extractedText = document.getElementById('extractedText');
+            const uploadProgress = document.getElementById('uploadProgress');
+            
+            if (fileInput.files && fileInput.files[0]) {
+                const file = fileInput.files[0];
+                
+                // Check if it's an image file
+                if (file.type.startsWith('image/')) {
+                    const reader = new FileReader();
+                    
+                    reader.onload = function(e) {
+                        previewImage.src = e.target.result;
+                        filePreview.style.display = 'block';
+                        
+                        // Now extract text from the image
+                        extractTextFromImage(file);
+                    };
+                    
+                    reader.readAsDataURL(file);
+                } else if (file.type === 'application/pdf') {
+                    // For PDFs, don't show image preview but still try text extraction
+                    filePreview.style.display = 'none';
+                    extractTextFromImage(file);
+                } else {
+                    // For other file types, don't show preview or extract text
+                    filePreview.style.display = 'none';
+                    extractedTextContainer.style.display = 'none';
                 }
-
-                const formData = new FormData();
-                formData.append('prescription', file);
-
-                // Show progress bar
-                const progressBar = document.querySelector('#uploadProgress');
-                const progressBarInner = progressBar.querySelector('.progress-bar');
-                progressBar.style.display = 'block';
-                progressBarInner.style.width = '0%';
-
-                fetch('upload_prescription.php', {
-                    method: 'POST',
-                    body: formData
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        alert(data.message);
-                        location.reload(); // Refresh to show new prescription
-                    } else {
-                        alert('Error: ' + data.message);
-                    }
-                })
-                .catch(error => {
-                    alert('Error uploading file: ' + error.message);
-                })
-                .finally(() => {
-                    progressBar.style.display = 'none';
-                });
+            } else {
+                filePreview.style.display = 'none';
+                extractedTextContainer.style.display = 'none';
             }
-        });
-
-        // Drag and drop support
-        const uploadArea = document.querySelector('.prescription-upload');
-
-        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
-            uploadArea.addEventListener(eventName, preventDefaults, false);
-        });
-
-        function preventDefaults (e) {
-            e.preventDefault();
-            e.stopPropagation();
         }
-
-        ['dragenter', 'dragover'].forEach(eventName => {
-            uploadArea.addEventListener(eventName, highlight, false);
+        
+        function extractTextFromImage(file) {
+            const formData = new FormData();
+            formData.append('prescription_file', file);
+            
+            const progressBar = document.querySelector('#uploadProgress .progress-bar');
+            const uploadProgress = document.getElementById('uploadProgress');
+            const extractedTextContainer = document.getElementById('extractedTextContainer');
+            const extractedText = document.getElementById('extractedText');
+            const prescriptionDetails = document.getElementById('prescription_details');
+            const manualEntryFallback = document.getElementById('manualEntryFallback');
+            
+            uploadProgress.style.display = 'block';
+            progressBar.style.width = '0%';
+            
+            $.ajax({
+                url: 'extract_text.php',
+                type: 'POST',
+                data: formData,
+                processData: false,
+                contentType: false,
+                xhr: function() {
+                    const xhr = new window.XMLHttpRequest();
+                    xhr.upload.addEventListener('progress', function(e) {
+                        if (e.lengthComputable) {
+                            const percent = Math.round((e.loaded / e.total) * 100);
+                            progressBar.style.width = percent + '%';
+                            progressBar.setAttribute('aria-valuenow', percent);
+                        }
+                    });
+                    return xhr;
+                },
+                success: function(response) {
+                    uploadProgress.style.display = 'none';
+                    console.log("Received response:", response);
+                    
+                    try {
+                        const result = JSON.parse(response);
+                        if (result.success && result.extractedText) {
+                            extractedText.textContent = result.extractedText;
+                            prescriptionDetails.value = result.extractedText;
+                            extractedTextContainer.style.display = 'block';
+                            manualEntryFallback.style.display = 'none';
+                        } else {
+                            console.error('Text extraction failed:', result.message);
+                            extractedText.textContent = 'Text extraction failed. Please enter details manually below.';
+                            extractedTextContainer.style.display = 'block';
+                            manualEntryFallback.style.display = 'block';
+                        }
+                    } catch (e) {
+                        console.error('Invalid JSON response:', response, e);
+                        extractedText.textContent = 'Error processing the image. Please enter details manually.';
+                        extractedTextContainer.style.display = 'block';
+                        manualEntryFallback.style.display = 'block';
+                    }
+                },
+                error: function(xhr, status, error) {
+                    uploadProgress.style.display = 'none';
+                    extractedText.textContent = 'Error uploading the image. Please enter details manually.';
+                    extractedTextContainer.style.display = 'block';
+                    manualEntryFallback.style.display = 'block';
+                    console.error('AJAX Error:', status, error, xhr.responseText);
+                }
+            });
+        }
+        
+        function useManualEntry() {
+            const manualText = document.getElementById('manual_prescription_details').value;
+            const extractedText = document.getElementById('extractedText');
+            const prescriptionDetails = document.getElementById('prescription_details');
+            
+            extractedText.textContent = manualText;
+            prescriptionDetails.value = manualText;
+            document.getElementById('manualEntryFallback').style.display = 'none';
+        }
+        
+        $(document).ready(function() {
+            $('#prescriptionForm').on('submit', function(e) {
+                e.preventDefault();
+                
+                const formData = new FormData(this);
+                
+                // Add extracted text if available
+                const extractedText = document.getElementById('extractedText');
+                if (extractedText.textContent.trim() !== '') {
+                    formData.append('extracted_text', extractedText.textContent);
+                }
+                
+                $.ajax({
+                    url: 'submit_prescription.php',
+                    type: 'POST',
+                    data: formData,
+                    processData: false,
+                    contentType: false,
+                    success: function(response) {
+                        console.log("Submission response:", response);
+                        
+                        try {
+                            const result = JSON.parse(response);
+                            if (result.success) {
+                                alert(result.message);
+                                $('#prescriptionForm')[0].reset();
+                                $('#filePreview').hide();
+                                $('#extractedTextContainer').hide();
+                            } else {
+                                alert('Error: ' + result.message);
+                            }
+                        } catch (e) {
+                            console.error('Invalid JSON response:', response, e);
+                            if (response.includes('success')) {
+                                alert('Prescription submitted successfully!');
+                                $('#prescriptionForm')[0].reset();
+                                $('#filePreview').hide();
+                                $('#extractedTextContainer').hide();
+                            } else {
+                                alert('Error processing your request. Please try again.');
+                            }
+                        }
+                    },
+                    error: function(xhr, status, error) {
+                        console.error('AJAX Error:', status, error, xhr.responseText);
+                        alert('Error submitting prescription. Please try again. Details: ' + error);
+                    }
+                });
+            });
         });
-
-        ['dragleave', 'drop'].forEach(eventName => {
-            uploadArea.addEventListener(eventName, unhighlight, false);
-        });
-
-        function highlight(e) {
-            uploadArea.classList.add('bg-light');
-        }
-
-        function unhighlight(e) {
-            uploadArea.classList.remove('bg-light');
-        }
-
-        uploadArea.addEventListener('drop', handleDrop, false);
-
-        function handleDrop(e) {
-            const dt = e.dataTransfer;
-            const file = dt.files[0];
-            document.getElementById('prescriptionFile').files = dt.files;
-            document.getElementById('prescriptionFile').dispatchEvent(new Event('change'));
-        }
     </script>
 </body>
 </html>

@@ -1,4 +1,4 @@
-<?php
+ <?php
 session_start();
 
 // Check if user is logged in
@@ -148,9 +148,7 @@ $stmt->close();
             <div class="col-auto d-flex gap-2">
                 <a href="customer-dashboard.php" class="btn btn-secondary">Back to Dashboard</a>
                 <?php if (isset($_SESSION['user_id'])): ?>
-                    <a href="view_cart.php" class="btn btn-primary">
-                        <i class="bi bi-cart"></i> View Cart
-                    </a>
+                    
                     <a href="customer-profile.php" class="btn btn-info">
                         <i class="bi bi-person"></i> My Profile
                     </a>
@@ -206,7 +204,6 @@ $stmt->close();
                                     <th>Batch Number</th>
                                     <th>Expiry Date</th>
                                     <th>Price/Unit</th>
-                                    <th>Availability</th>
                                     <th>Actions</th>
                                 </tr>
                             </thead>
@@ -236,25 +233,13 @@ $stmt->close();
                                                 <span class="text-muted">Not set</span>
                                             <?php endif; ?>
                                         </td>
-                                        <td>
-                                            <?php if (isset($medicine['stock_quantity'])): ?>
-                                                <?php if ($medicine['stock_quantity'] > 0): ?>
-                                                    <span class="badge bg-success">In Stock (<?= $medicine['stock_quantity'] ?>)</span>
-                                                <?php else: ?>
-                                                    <span class="badge bg-danger">Out of Stock</span>
-                                                <?php endif; ?>
-                                            <?php else: ?>
-                                                <span class="badge bg-secondary">Status Unknown</span>
-                                            <?php endif; ?>
-                                        </td>
+                                        
                                         <td>
                                             <?php if (isset($medicine['stock_quantity']) && $medicine['stock_quantity'] > 0 && !$expired): ?>
                                                 <form method="POST" class="d-flex gap-2">
                                                     <input type="hidden" name="medicine_id" value="<?= $medicine['medicine_id'] ?>">
                                                     <input type="number" name="quantity" value="1" min="1" max="<?= $medicine['stock_quantity'] ?>" class="form-control form-control-sm" style="width: 70px;">
-                                                    <button type="submit" name="add_to_cart" class="btn btn-primary btn-sm">
-                                                        <i class="bi bi-cart-plus"></i> Add to Cart
-                                                    </button>
+                                                    
                                                 </form>
                                             <?php elseif ($expired): ?>
                                                 <span class="badge bg-danger">Expired</span>

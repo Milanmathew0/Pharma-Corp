@@ -218,7 +218,7 @@ $result = $conn->query($sql);
             <?php
             $total_items = $result->num_rows;
             
-            $low_stock_sql = "SELECT COUNT(*) as count FROM Medicines WHERE stock_quantity <= 100";
+            $low_stock_sql = "SELECT COUNT(*) as count FROM Medicines WHERE stock_quantity <= 10";
             $low_stock_result = $conn->query($low_stock_sql);
             $low_stock = $low_stock_result->fetch_assoc()['count'];
             
