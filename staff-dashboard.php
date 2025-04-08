@@ -495,8 +495,7 @@ if (!$all_prescriptions_result) {
                                     <th>Date</th>
                                     <th>Customer</th>
                                     <th>File</th>
-                                    <th>Extracted Text</th>
-                                    <th>Status</th>
+                                    <th>Extracted Text</th>                                    <th>Status</th>
                                     <th>Actions</th>
                                 </tr>
                             </thead>

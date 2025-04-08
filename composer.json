@@ -1,6 +1,8 @@
 {
     "require": {
         "smalot/pdfparser": "^2.11",
-        "thiagoalessio/tesseract_ocr": "^2.13"
+        "thiagoalessio/tesseract_ocr": "^2.13",
+        "razorpay/razorpay": "^2.9",
+        "mpdf/mpdf": "6.1"
     }
 }

@@ -11,10 +11,11 @@ include "connect.php";
 
 // Process sale
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['process_sale'])) {
-    $customer_id = $_POST['customer_id'];
+    $customer_id = $_POST['customer_id'] === 'walkin' ? null : $_POST['customer_id'];
     $medicine_id = $_POST['medicine_id'];
     $quantity = $_POST['quantity'];
     $payment_method = $_POST['payment_method'];
+    $walkin_name = isset($_POST['walkin_name']) ? $_POST['walkin_name'] : null;
     
     // Start transaction
     $conn->begin_transaction();
@@ -37,17 +38,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['process_sale'])) {
         if ($medicine && $medicine['stock_quantity'] >= $quantity) {
             $total_amount = $quantity * $medicine['price'];
             
-            // Create sale record
-            $sale_query = "INSERT INTO sales (customer_id, staff_id, total_amount, payment_method, sale_date) 
-                          VALUES (?, ?, ?, ?, NOW())";
-            $stmt = $conn->prepare($sale_query);
+            // Create sale record - let's check if customer_name column exists
+            $check_column_query = "SHOW COLUMNS FROM sales LIKE 'customer_name'";
+            $column_result = $conn->query($check_column_query);
+            
+            if ($column_result && $column_result->num_rows > 0) {
+                // The column exists
+                $sale_query = "INSERT INTO sales (customer_id, staff_id, total_amount, payment_method, sale_date, customer_name) 
+                              VALUES (?, ?, ?, ?, NOW(), ?)";
+                $stmt = $conn->prepare($sale_query);
+                $stmt->bind_param("iidss", $customer_id, $_SESSION['user_id'], $total_amount, $payment_method, $walkin_name);
+            } else {
+                // The column doesn't exist
+                $sale_query = "INSERT INTO sales (customer_id, staff_id, total_amount, payment_method, sale_date) 
+                              VALUES (?, ?, ?, ?, NOW())";
+                $stmt = $conn->prepare($sale_query);
+                $stmt->bind_param("iids", $customer_id, $_SESSION['user_id'], $total_amount, $payment_method);
+            }
             
             // Check if statement preparation was successful
             if ($stmt === false) {
                 throw new Exception("Failed to prepare sale query: " . $conn->error);
             }
             
-            $stmt->bind_param("iids", $customer_id, $_SESSION['user_id'], $total_amount, $payment_method);
             $stmt->execute();
             $sale_id = $conn->insert_id;
             
@@ -76,6 +89,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['process_sale'])) {
             $stmt->execute();
             
             $conn->commit();
+            
+            // For Razorpay payment, redirect to payment handler
+            if ($payment_method === 'razorpay') {
+                $_SESSION['razorpay_sale_id'] = $sale_id;
+                $_SESSION['razorpay_amount'] = $total_amount;
+                $_SESSION['success'] = "Sale created, redirecting to payment...";
+                header("Location: sales-payment.php?sale_id=" . $sale_id);
+                exit();
+            }
+            
             $_SESSION['success'] = "Sale processed successfully!";
         } else {
             throw new Exception("Insufficient stock!");
@@ -90,7 +113,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['process_sale'])) {
 }
 
 // Get all customers
-$customers_query = "SELECT user_id, name, email FROM users WHERE role = 'Customer'";
+$customers_query = "SELECT user_id, username, email FROM users WHERE role = 'Customer'";
 $customers = $conn->query($customers_query);
 
 // Get all medicines
@@ -280,7 +303,7 @@ if (!$tables_created && ($check_sales_table->num_rows == 0 || $check_sale_items_
                                     <option value="walkin">Non-registered Customer / Walk-in</option>
                                     <?php while($customer = $customers->fetch_assoc()): ?>
                                         <option value="<?= $customer['user_id'] ?>">
-                                            <?= htmlspecialchars($customer['name']) ?> (<?= htmlspecialchars($customer['email']) ?>)
+                                            <?= htmlspecialchars($customer['username']) ?> 
                                         </option>
                                     <?php endwhile; ?>
                                 </select>
@@ -323,8 +346,9 @@ if (!$tables_created && ($check_sales_table->num_rows == 0 || $check_sale_items_
 
                             <div class="mb-3">
                                 <label for="payment_method" class="form-label">Payment Method</label>
-                                <select class="form-select" name="payment_method" required>
+                                <select class="form-select" name="payment_method" id="payment_method" required>
                                     <option value="cash" selected>Cash</option>
+                                    <option value="razorpay">Razorpay (Online)</option>
                                 </select>
                             </div>
 
@@ -365,6 +389,7 @@ if (!$tables_created && ($check_sales_table->num_rows == 0 || $check_sale_items_
                                             <th>Medicine</th>
                                             <th>Quantity</th>
                                             <th>Amount</th>
+                                            <th>Actions</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -392,6 +417,13 @@ if (!$tables_created && ($check_sales_table->num_rows == 0 || $check_sale_items_
                                                     <td><?= htmlspecialchars($sale['medicine_name']) ?></td>
                                                     <td><?= $sale['quantity'] ?></td>
                                                     <td>₹<?= number_format($sale['item_total'], 2) ?></td>
+                                                    <td>
+                                                        <a href="generate-receipt.php?sale_id=<?= $sale['sale_id'] ?>" 
+                                                           class="btn btn-sm btn-outline-primary" 
+                                                           target="_blank">
+                                                            <i class="bi bi-download"></i> Receipt
+                                                        </a>
+                                                    </td>
                                                 </tr>
                                         <?php 
                                                 endif;
@@ -399,7 +431,7 @@ if (!$tables_created && ($check_sales_table->num_rows == 0 || $check_sale_items_
                                         else: 
                                         ?>
                                             <tr>
-                                                <td colspan="5" class="text-center">No recent sales found.</td>
+                                                <td colspan="6" class="text-center">No recent sales found.</td>
                                             </tr>
                                         <?php endif; ?>
                                     </tbody>
@@ -438,6 +470,26 @@ if (!$tables_created && ($check_sales_table->num_rows == 0 || $check_sale_items_
             // Initialize the display state
             toggleWalkinName();
             
+            // Handle payment method changes
+            const paymentMethodSelect = document.getElementById('payment_method');
+            const saleForm = document.getElementById('saleForm');
+            
+            paymentMethodSelect.addEventListener('change', function() {
+                if (this.value === 'razorpay' && customerSelect.value === 'walkin') {
+                    alert('Online payments require a registered customer. Please select a registered customer or choose Cash payment for walk-in customers.');
+                    this.value = 'cash';
+                }
+            });
+            
+            saleForm.addEventListener('submit', function(e) {
+                if (paymentMethodSelect.value === 'razorpay' && customerSelect.value === 'walkin') {
+                    e.preventDefault();
+                    alert('Online payments require a registered customer. Please select a registered customer or choose Cash payment for walk-in customers.');
+                    paymentMethodSelect.value = 'cash';
+                    return false;
+                }
+            });
+            
             // Initialize Select2
             $(document).ready(function() {
                 $('.medicine-select').select2({
@@ -448,6 +500,12 @@ if (!$tables_created && ($check_sales_table->num_rows == 0 || $check_sale_items_
                 // Update total when Select2 changes
                 $('.medicine-select').on('select2:select', function (e) {
                     updateTotal();
+                });
+
+                // Initialize Select2 for customers dropdown
+                $('.customer-select').select2({
+                    placeholder: 'Search and select customer',
+                    width: '100%'
                 });
             });
 

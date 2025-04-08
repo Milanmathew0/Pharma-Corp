@@ -34,6 +34,7 @@ $stmt->close();
 $user['name'] = $user['name'] ?? '';
 $user['phone'] = $user['phone'] ?? '';
 $user['address'] = $user['address'] ?? '';
+$user['email'] = $user['email'] ?? $_SESSION['email'] ?? ''; // Initialize email from session if not in user data
 
 // Handle profile update
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['update_profile'])) {
@@ -182,7 +183,17 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['update_profile'])) {
                 <div class="card">
                     <div class="card-body">
                         <form method="POST" class="needs-validation" novalidate>
-                            
+                            <div class="mb-3">
+                                <label for="name" class="form-label">Full Name</label>
+                                <input type="text" class="form-control" id="name" name="name" 
+                                       value="<?= htmlspecialchars($user['name']) ?>" required>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="email" class="form-label">Email Address</label>
+                                <input type="email" class="form-control" id="email" name="email" 
+                                       value="<?= htmlspecialchars($user['email']) ?>" required>
+                            </div>
 
                             <div class="mb-3">
                                 <label for="phone" class="form-label">Phone Number</label>

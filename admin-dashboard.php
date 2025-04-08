@@ -401,46 +401,6 @@ function logout() {
             </div>
           </div>
 
-          <div class="col-xl-3 col-md-6 mb-4">
-            <div class="card border-left-info shadow h-100 py-2">
-              <div class="card-body">
-                <div class="row no-gutters align-items-center">
-                  <div class="col mr-2">
-                    <div class="text-xs font-weight-bold text-info text-uppercase mb-1">Orders</div>
-                    <div class="h5 mb-0 font-weight-bold text-gray-800"><?php echo $order_stats['total_orders']; ?></div>
-                    <div class="small text-muted">
-                      Completed: <?php echo $order_stats['completed_orders']; ?><br>
-                      Pending: <?php echo $order_stats['pending_orders']; ?>
-                    </div>
-                  </div>
-                  <div class="col-auto">
-                    <i class="fas fa-shopping-cart fa-2x text-gray-300"></i>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div class="col-xl-3 col-md-6 mb-4">
-            <div class="card border-left-warning shadow h-100 py-2">
-              <div class="card-body">
-                <div class="row no-gutters align-items-center">
-                  <div class="col mr-2">
-                    <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">Revenue</div>
-                    <div class="h5 mb-0 font-weight-bold text-gray-800">₹<?php echo number_format($order_stats['total_revenue'], 2); ?></div>
-                    <div class="small text-muted">
-                      Avg Order: ₹<?php echo number_format($order_stats['avg_order_value'], 2); ?><br>
-                      Monthly: ₹<?php echo number_format($monthly_sales, 2); ?>
-                    </div>
-                  </div>
-                  <div class="col-auto">
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
         <div class="row">
           <div class="col-xl-8">
             <div class="feature-card">
