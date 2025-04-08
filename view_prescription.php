@@ -25,8 +25,34 @@ if(isset($_GET['id'])) {
             exit();
         }
         
-        // Output the image with proper headers
-        header("Content-Type: image/jpeg");
+        // Check file extension to determine content type
+        $file_name = $prescription['file_name'];
+        $file_extension = strtolower(pathinfo($file_name, PATHINFO_EXTENSION));
+        
+        // Output the file with appropriate content type header
+        switch($file_extension) {
+            case 'pdf':
+                header("Content-Type: application/pdf");
+                break;
+            case 'jpg':
+            case 'jpeg':
+                header("Content-Type: image/jpeg");
+                break;
+            case 'png':
+                header("Content-Type: image/png");
+                break;
+            case 'gif':
+                header("Content-Type: image/gif");
+                break;
+            default:
+                header("Content-Type: application/octet-stream");
+                break;
+        }
+        
+        // Add content disposition header for all file types
+        header("Content-Disposition: inline; filename=\"" . basename($file_name) . "\"");
+        
+        // Output the file content
         echo $prescription['file_content'];
         exit;
     } else {

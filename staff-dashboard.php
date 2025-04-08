@@ -494,9 +494,8 @@ if (!$all_prescriptions_result) {
                                 <tr>
                                     <th>Date</th>
                                     <th>Customer</th>
-                                    <th>File</th>
-                                    <th>Extracted Text</th>                                    <th>Status</th>
-                                    <th>Actions</th>
+                                    <th>File</th>                                  <th>Status</th>
+                                   
                                 </tr>
                             </thead>
                             <tbody>
@@ -509,22 +508,13 @@ if (!$all_prescriptions_result) {
                                     <td>
                                         <?php if(!empty($prescription['file_name'])): ?>
                                         <a href="view_prescription.php?id=<?= $prescription['id'] ?>" target="_blank" class="btn btn-sm btn-outline-secondary">
-                                            View File (<?= htmlspecialchars($prescription['file_name']) ?>)
+                                            View File 
                                         </a>
                                         <?php else: ?>
                                         No file
                                         <?php endif; ?>
                                     </td>
-                                    <td>
-                                        <?php if(!empty($prescription['extracted_text'])): ?>
-                                        <div class="prescription-text" style="max-height: 100px; overflow-y: auto;">
-                                            <?= nl2br(htmlspecialchars(substr($prescription['extracted_text'], 0, 200))) ?>
-                                            <?= (strlen($prescription['extracted_text']) > 200) ? '...' : '' ?>
-                                        </div>
-                                        <?php else: ?>
-                                        <span class="text-muted">No text extracted</span>
-                                        <?php endif; ?>
-                                    </td>
+                                    
                                     <td>
                                         <span class="badge <?php 
                                             echo match($prescription['status']) {
@@ -548,10 +538,6 @@ if (!$all_prescriptions_result) {
                                             Reject
                                         </button>
                                         <?php elseif($prescription['status'] == 'approved' || $prescription['status'] == 'rejected'): ?>
-                                        <button type="button" class="btn btn-warning btn-sm" 
-                                                onclick="updatePrescriptionStatus(<?= $prescription['id'] ?>, 'pending')">
-                                            Mark as Pending
-                                        </button>
                                         <?php endif; ?>
                                     </td>
                                 </tr>
@@ -595,21 +581,7 @@ if (!$all_prescriptions_result) {
             </div>
         </div>
 
-        
-
-        <!-- Stock Management -->
-        <div class="col-md-4">
-            <div class="card h-100 feature-card">
-                <div class="card-body text-center">
-                    <i class="bi bi-box-seam icon-large text-info"></i>
-                    <h5 class="card-title">Stock Management</h5>
-                    <p class="card-text">Monitor stock levels, handle expiry dates, and manage inventory.</p>
-                    <a href="staff-stock.php" class="btn btn-info">
-                        <i class="bi bi-box-seam"></i> Manage Stock
-                    </a>
-                </div>
-            </div>
-        </div>
+       
 
         
     </div>

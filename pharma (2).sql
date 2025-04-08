@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Apr 02, 2025 at 06:36 PM
+-- Generation Time: Apr 08, 2025 at 08:13 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.0.30
 
@@ -20,45 +20,6 @@ SET time_zone = "+00:00";
 --
 -- Database: `pharma`
 --
-
--- --------------------------------------------------------
-
---
--- Table structure for table `cart`
---
-
-CREATE TABLE `cart` (
-  `cart_id` int(11) NOT NULL,
-  `user_id` varchar(50) DEFAULT NULL,
-  `medicine_id` int(11) DEFAULT NULL,
-  `quantity` int(11) NOT NULL,
-  `added_date` timestamp NOT NULL DEFAULT current_timestamp()
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
---
--- Dumping data for table `cart`
---
-
-INSERT INTO `cart` (`cart_id`, `user_id`, `medicine_id`, `quantity`, `added_date`) VALUES
-(1, 'Milan1', 14, 3, '2025-02-18 14:00:01'),
-(2, '11', 14, 1, '2025-02-18 16:31:09'),
-(3, 's101', 14, 1, '2025-02-19 08:08:59'),
-(4, '8', 14, 131, '2025-02-19 08:54:22'),
-(5, 'U0010', 19, 1, '2025-03-21 05:55:36');
-
--- --------------------------------------------------------
-
---
--- Table structure for table `customers`
---
-
-CREATE TABLE `customers` (
-  `customer_id` int(10) NOT NULL,
-  `name` varchar(100) NOT NULL,
-  `phone` varchar(15) NOT NULL,
-  `email` varchar(100) DEFAULT NULL,
-  `address` text DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
 
@@ -80,8 +41,14 @@ CREATE TABLE `login_logs` (
 --
 
 INSERT INTO `login_logs` (`id`, `user_id`, `email`, `role`, `login_time`, `status`) VALUES
-(1, 'U0013', 'vaan@gmail.com', 'Customer', '2025-03-27 12:16:21', 'logout'),
-(2, 'U0007', 'milan@gmail.com', 'Admin', '2025-03-30 22:11:51', 'logout');
+(1, 'U0010', 'milan3@gmail.com', 'Customer', '2025-04-05 22:47:11', 'logout'),
+(2, 'U0010', 'milan3@gmail.com', 'Customer', '2025-04-05 23:18:18', 'logout'),
+(3, 'U0010', 'milan3@gmail.com', 'Customer', '2025-04-05 23:19:07', 'logout'),
+(4, 'U0010', 'milan3@gmail.com', 'Customer', '2025-04-05 23:25:21', 'logout'),
+(5, 'U0010', 'milan3@gmail.com', 'Customer', '2025-04-05 23:31:28', 'logout'),
+(6, 'U0009', 'milan2@gmail.com', 'Customer', '2025-04-05 23:32:26', 'logout'),
+(7, 'U0007', 'milan@gmail.com', 'Admin', '2025-04-07 21:56:18', 'logout'),
+(8, 'R0014', 'michael@gmail.com', 'Staff', '2025-04-07 22:17:56', 'logout');
 
 -- --------------------------------------------------------
 
@@ -107,42 +74,17 @@ CREATE TABLE `medicines` (
 
 INSERT INTO `medicines` (`medicine_id`, `name`, `batch_number`, `mfg_date`, `expiry_date`, `stock_quantity`, `price_per_unit`, `company`, `price`) VALUES
 (14, 'dolo', '200', '2024-02-28', '2027-02-28', 1290, 2.00, 'Torrent Pharma', 10.00),
-(19, 'Amoxicillin 250mg', 'SP231205B', '2025-02-20', '2027-02-28', 98, 50.00, 'Sun Pharma', 10.00),
+(19, 'Amoxicillin 250mg', 'SP231205B', '2025-02-20', '2027-02-28', 94, 50.00, 'Sun Pharma', 10.00),
 (20, 'Metformin 500mg', 'LP240315X', '2025-02-13', '2027-02-28', 978, 30.00, 'Lupin', 10.00),
-(22, 'Azithromycin 500mg', 'ZC240522E', '2025-02-20', '2027-02-28', 973, 100.00, 'Zydus Cadila', 10.00),
+(22, 'Azithromycin 500mg', 'ZC240522E', '2025-02-20', '2027-02-28', 844, 100.00, 'Zydus Cadila', 10.00),
 (23, 'Pantoprazole 40mg', 'TP240305F', '2025-02-20', '2027-02-28', 990, 50.00, 'Torrent Pharma', 10.00),
 (24, 'Montelukast 10mg', 'MK240110G', '2025-02-19', '2027-02-28', 1000, 70.00, 'Mankind Pharma', 10.00),
-(25, 'Dolo 650mg (Paracetamol)', 'ML231230H', '2025-02-20', '2027-02-28', 969, 30.00, 'Micro Labs', 10.00),
+(25, 'Dolo 650mg (Paracetamol)', 'ML231230H', '2025-02-20', '2027-02-28', 961, 30.00, 'Micro Labs', 10.00),
 (26, 'Ranitidine 150mg', 'ST240401I', '2025-02-13', '2027-02-28', 101, 60.00, 'Strides Pharma', 10.00),
 (27, 'fcghvjbknlm', 'cxvyu09', '2025-02-04', '2027-02-28', 4475, 144.00, 'cgvhbjnkml', 10.00),
-(28, 'fgfhgj', 'vhbnm', '2025-02-01', '2027-03-01', 700, 455.00, 'vhbjnk', 10.00);
-
--- --------------------------------------------------------
-
---
--- Table structure for table `notifications`
---
-
-CREATE TABLE `notifications` (
-  `notification_id` int(10) NOT NULL,
-  `user_id` varchar(10) NOT NULL,
-  `message` text NOT NULL,
-  `date_sent` datetime NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
--- --------------------------------------------------------
-
---
--- Table structure for table `orders`
---
-
-CREATE TABLE `orders` (
-  `order_id` int(10) NOT NULL,
-  `customer_id` int(10) NOT NULL,
-  `order_date` datetime NOT NULL,
-  `total_amount` decimal(10,2) NOT NULL,
-  `status` enum('Pending','Completed','Cancelled') NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+(28, 'fgfhgj', 'vhbnm', '2025-02-01', '2027-03-01', 700, 455.00, 'vhbjnk', 10.00),
+(30, 'Cetirizine 10mg', 'CTZ10Z567', '2025-04-03', '2027-06-24', 140, 12.00, 'Zenith Pharmaceuticals', 0.00),
+(31, 'Montelukasts 10mg', 'ST240401K', '2025-04-02', '2027-12-15', 100, 10.00, 'RX COMPOUNDINGS', 0.00);
 
 -- --------------------------------------------------------
 
@@ -174,19 +116,6 @@ INSERT INTO `prescriptions` (`id`, `user_id`, `file_name`, `file_content`, `extr
 -- --------------------------------------------------------
 
 --
--- Table structure for table `purchases`
---
-
-CREATE TABLE `purchases` (
-  `purchase_id` int(10) NOT NULL,
-  `supplier_id` int(10) NOT NULL,
-  `purchase_date` datetime NOT NULL,
-  `total_amount` decimal(10,2) NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
--- --------------------------------------------------------
-
---
 -- Table structure for table `sales`
 --
 
@@ -196,22 +125,75 @@ CREATE TABLE `sales` (
   `staff_id` int(11) NOT NULL,
   `total_amount` decimal(10,2) NOT NULL,
   `payment_method` varchar(50) NOT NULL,
-  `sale_date` datetime NOT NULL
+  `sale_date` datetime NOT NULL,
+  `payment_status` varchar(20) DEFAULT 'pending',
+  `razorpay_payment_id` varchar(100) DEFAULT NULL,
+  `razorpay_order_id` varchar(100) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `sales`
 --
 
-INSERT INTO `sales` (`sale_id`, `customer_id`, `staff_id`, `total_amount`, `payment_method`, `sale_date`) VALUES
-(1, 0, 0, 20.00, 'cash', '2025-03-26 22:53:23'),
-(2, 0, 0, 210.00, 'cash', '2025-03-26 23:04:41'),
-(3, 0, 0, 20.00, 'cash', '2025-03-26 23:13:50'),
-(4, 0, 0, 100.00, 'cash', '2025-03-27 12:17:49'),
-(5, 0, 0, 100.00, 'cash', '2025-03-27 12:18:21'),
-(6, 0, 0, 120.00, 'cash', '2025-03-27 14:10:37'),
-(7, 0, 0, 100.00, 'cash', '2025-04-02 14:53:53'),
-(8, 0, 0, 100.00, 'cash', '2025-04-02 15:01:44');
+INSERT INTO `sales` (`sale_id`, `customer_id`, `staff_id`, `total_amount`, `payment_method`, `sale_date`, `payment_status`, `razorpay_payment_id`, `razorpay_order_id`) VALUES
+(1, 0, 0, 20.00, 'cash', '2025-03-26 22:53:23', 'pending', NULL, NULL),
+(2, 0, 0, 210.00, 'cash', '2025-03-26 23:04:41', 'pending', NULL, NULL),
+(3, 0, 0, 20.00, 'cash', '2025-03-26 23:13:50', 'pending', NULL, NULL),
+(4, 0, 0, 100.00, 'cash', '2025-03-27 12:17:49', 'pending', NULL, NULL),
+(5, 0, 0, 100.00, 'cash', '2025-03-27 12:18:21', 'pending', NULL, NULL),
+(6, 0, 0, 120.00, 'cash', '2025-03-27 14:10:37', 'pending', NULL, NULL),
+(7, 0, 0, 100.00, 'cash', '2025-04-02 14:53:53', 'pending', NULL, NULL),
+(8, 0, 0, 100.00, 'cash', '2025-04-02 15:01:44', 'pending', NULL, NULL),
+(9, 0, 0, 50.00, 'cash', '2025-04-02 22:12:15', 'pending', NULL, NULL),
+(10, 0, 0, 30.00, 'razorpay', '2025-04-02 22:13:51', 'pending', NULL, NULL),
+(11, 0, 0, 80.00, 'razorpay', '2025-04-02 22:14:13', 'pending', NULL, NULL),
+(12, 0, 0, 90.00, 'razorpay', '2025-04-02 22:18:23', 'pending', NULL, NULL),
+(13, 0, 0, 40.00, 'razorpay', '2025-04-02 22:19:53', 'pending', NULL, NULL),
+(14, 0, 0, 110.00, 'razorpay', '2025-04-02 22:21:04', 'completed', 'pay_QEGGFFB8Zo9NCf', 'order_QEGFzmHQAcZpkk'),
+(15, 0, 0, 200.00, 'razorpay', '2025-04-02 22:34:25', 'pending', NULL, NULL),
+(16, 0, 0, 40.00, 'cash', '2025-04-02 22:37:03', 'pending', NULL, NULL),
+(17, 0, 0, 470.00, 'razorpay', '2025-04-02 22:38:49', 'completed', 'pay_QEGa6ZFMr1f4Rx', 'order_QEGZvsMYYRpgdV'),
+(18, 0, 0, 100.00, 'razorpay', '2025-04-02 22:40:57', 'completed', 'pay_QEGc4QhOUfY6pf', 'order_QEGazUtaly03wc'),
+(19, 0, 0, 100.00, 'razorpay', '2025-04-07 16:25:53', 'completed', 'pay_QG8vI0qOdto2ry', 'order_QG8sQDLHgi6IRK'),
+(20, 0, 0, 100.00, 'razorpay', '2025-04-07 16:34:18', 'completed', 'pay_QG91WJrRPfduJ8', 'order_QG91H9BehN5MpA');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `sales_items`
+--
+
+CREATE TABLE `sales_items` (
+  `item_id` int(11) NOT NULL,
+  `sale_id` int(11) NOT NULL,
+  `medicine_id` int(11) NOT NULL,
+  `quantity` int(11) NOT NULL,
+  `price` decimal(10,2) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `sales_items`
+--
+
+INSERT INTO `sales_items` (`item_id`, `sale_id`, `medicine_id`, `quantity`, `price`) VALUES
+(1, 1, 19, 2, 10.00),
+(6, 2, 25, 21, 10.00),
+(8, 3, 22, 2, 10.00),
+(9, 4, 14, 10, 10.00),
+(10, 5, 20, 10, 10.00),
+(11, 6, 20, 12, 10.00),
+(12, 7, 23, 10, 10.00),
+(13, 8, 22, 10, 10.00),
+(14, 9, 22, 5, 10.00),
+(15, 10, 22, 3, 10.00),
+(16, 11, 25, 8, 10.00),
+(17, 12, 22, 9, 10.00),
+(18, 13, 19, 4, 10.00),
+(19, 14, 22, 11, 10.00),
+(20, 15, 22, 20, 10.00),
+(21, 16, 22, 4, 10.00),
+(22, 17, 22, 47, 10.00),
+(23, 18, 22, 10, 10.00);
 
 -- --------------------------------------------------------
 
@@ -232,14 +214,8 @@ CREATE TABLE `sale_items` (
 --
 
 INSERT INTO `sale_items` (`item_id`, `sale_id`, `medicine_id`, `quantity`, `price`) VALUES
-(1, 1, 19, 2, 10.00),
-(6, 2, 25, 21, 10.00),
-(8, 3, 22, 2, 10.00),
-(9, 4, 14, 10, 10.00),
-(10, 5, 20, 10, 10.00),
-(11, 6, 20, 12, 10.00),
-(12, 7, 23, 10, 10.00),
-(13, 8, 22, 10, 10.00);
+(1, 19, 22, 10, 10.00),
+(2, 20, 22, 10, 10.00);
 
 -- --------------------------------------------------------
 
@@ -252,20 +228,6 @@ CREATE TABLE `staff_requests` (
   `username` varchar(50) NOT NULL,
   `email` varchar(100) NOT NULL,
   `status` enum('active','inactive') DEFAULT 'active'
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
--- --------------------------------------------------------
-
---
--- Table structure for table `suppliers`
---
-
-CREATE TABLE `suppliers` (
-  `supplier_id` int(10) NOT NULL,
-  `name` varchar(100) NOT NULL,
-  `phone` varchar(15) NOT NULL,
-  `email` varchar(100) DEFAULT NULL,
-  `address` text DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
@@ -293,31 +255,17 @@ CREATE TABLE `users` (
 INSERT INTO `users` (`user_id`, `username`, `password`, `role`, `status`, `email`, `phone`, `address`, `name`) VALUES
 ('R0011', 'balan', '$2y$10$tJ1vM4/D20BuQDITlKIfcOpCUnMmj5lnB2LIyOHEvgl7yvqxQbuJW', 'Staff', 'approved', 'balan@gmail.com', NULL, NULL, NULL),
 ('R0012', 'milan4', '$2y$10$yiGWDLCRP9MpmmS/Ioq3qe2VpYqXoLtH6UQ2zGOkr4xKc75bmZiWG', 'Staff', 'approved', 'milan4@gmail.com', NULL, NULL, NULL),
+('R0014', 'michael', '$2y$10$piojlVbET.jITckv3g80TOkG3/DDmWraVD2qJrocLV.tPYiQIeTfe', 'Staff', 'approved', 'michael@gmail.com', NULL, NULL, NULL),
 ('U0005', 'tom', '$2y$10$gAK.QbzZ9TRUbZP30dJwL.YXUXBBNueq2TAW4QxhtvjceBbDIa8nO', 'Customer', 'pending', 'tomshibu49@gmail.com', NULL, NULL, NULL),
 ('U0006', 'Milan', '$2y$10$hnPsxzjIjW5pSAxUIf1u5ujaW8pPyKmWCN2tvYpA9TOcjmzIuL5ta', 'Admin', 'pending', 'milanmathew6656@gmail.com', NULL, NULL, NULL),
 ('U0007', 'milan1', '$2y$10$PdbMk8bFICIQc1ei2bKRa.yMUEoTew6OEQr9W6pcRHr5hjfPNsDQy', 'Admin', 'pending', 'milan@gmail.com', NULL, NULL, NULL),
-('U0009', 'milan2', '$2y$10$WFSQZXlTmM1xubnSj/uY.uQCRHuBXHcacE5TQMvnCouESut4UpD2O', 'Customer', 'pending', 'milan2@gmail.com', NULL, NULL, NULL),
-('U0010', 'milan3', '$2y$10$xKT8Ta.m8akx4PYMvEA38u1g0MXGEOxMzJqBk.09I/39CY8gQKc2y', 'Customer', 'pending', 'milan3@gmail.com', NULL, NULL, NULL),
+('U0009', 'milan2', '$2y$10$O4dxHLfiNYSLjRWRDwDy4.UB4bLaVc3ee3DrOvPfezFBMauxNduDi', 'Customer', 'pending', 'milan2@gmail.com', '9876543210', 'alakode h kannur', 'Milan Mathew'),
+('U0010', 'milan3', '$2y$10$nAGHqhp5iGLczUWNjdl7numSfemQnxlJKu/querQNm6KFHVU2CxF.', 'Customer', 'pending', 'milan3@gmail.com', '9876543210', 'alakode', 'Milan Mathew'),
 ('U0013', 'vaan', '$2y$10$7Y60qPCgcXAs0iHKBe2pOO9iaAGm0kBVGI.jhsu5RuNkVd/JJInZW', 'Customer', 'pending', 'vaan@gmail.com', NULL, NULL, NULL);
 
 --
 -- Indexes for dumped tables
 --
-
---
--- Indexes for table `cart`
---
-ALTER TABLE `cart`
-  ADD PRIMARY KEY (`cart_id`),
-  ADD KEY `medicine_id` (`medicine_id`);
-
---
--- Indexes for table `customers`
---
-ALTER TABLE `customers`
-  ADD PRIMARY KEY (`customer_id`),
-  ADD UNIQUE KEY `phone` (`phone`),
-  ADD UNIQUE KEY `email` (`email`);
 
 --
 -- Indexes for table `login_logs`
@@ -333,20 +281,6 @@ ALTER TABLE `medicines`
   ADD UNIQUE KEY `batch_number` (`batch_number`);
 
 --
--- Indexes for table `notifications`
---
-ALTER TABLE `notifications`
-  ADD PRIMARY KEY (`notification_id`),
-  ADD KEY `user_id` (`user_id`);
-
---
--- Indexes for table `orders`
---
-ALTER TABLE `orders`
-  ADD PRIMARY KEY (`order_id`),
-  ADD KEY `customer_id` (`customer_id`);
-
---
 -- Indexes for table `prescriptions`
 --
 ALTER TABLE `prescriptions`
@@ -354,17 +288,17 @@ ALTER TABLE `prescriptions`
   ADD KEY `user_id` (`user_id`);
 
 --
--- Indexes for table `purchases`
---
-ALTER TABLE `purchases`
-  ADD PRIMARY KEY (`purchase_id`),
-  ADD KEY `supplier_id` (`supplier_id`);
-
---
 -- Indexes for table `sales`
 --
 ALTER TABLE `sales`
   ADD PRIMARY KEY (`sale_id`);
+
+--
+-- Indexes for table `sales_items`
+--
+ALTER TABLE `sales_items`
+  ADD PRIMARY KEY (`item_id`),
+  ADD KEY `sale_id` (`sale_id`);
 
 --
 -- Indexes for table `sale_items`
@@ -380,14 +314,6 @@ ALTER TABLE `staff_requests`
   ADD PRIMARY KEY (`id`);
 
 --
--- Indexes for table `suppliers`
---
-ALTER TABLE `suppliers`
-  ADD PRIMARY KEY (`supplier_id`),
-  ADD UNIQUE KEY `phone` (`phone`),
-  ADD UNIQUE KEY `email` (`email`);
-
---
 -- Indexes for table `users`
 --
 ALTER TABLE `users`
@@ -400,22 +326,10 @@ ALTER TABLE `users`
 --
 
 --
--- AUTO_INCREMENT for table `cart`
---
-ALTER TABLE `cart`
-  MODIFY `cart_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
-
---
--- AUTO_INCREMENT for table `customers`
---
-ALTER TABLE `customers`
-  MODIFY `customer_id` int(10) NOT NULL AUTO_INCREMENT;
-
---
 -- AUTO_INCREMENT for table `login_logs`
 --
 ALTER TABLE `login_logs`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
 
 --
 -- AUTO_INCREMENT for table `medicines`
@@ -424,40 +338,28 @@ ALTER TABLE `medicines`
   MODIFY `medicine_id` int(10) NOT NULL AUTO_INCREMENT;
 
 --
--- AUTO_INCREMENT for table `notifications`
---
-ALTER TABLE `notifications`
-  MODIFY `notification_id` int(10) NOT NULL AUTO_INCREMENT;
-
---
--- AUTO_INCREMENT for table `orders`
---
-ALTER TABLE `orders`
-  MODIFY `order_id` int(10) NOT NULL AUTO_INCREMENT;
-
---
 -- AUTO_INCREMENT for table `prescriptions`
 --
 ALTER TABLE `prescriptions`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=20;
 
 --
--- AUTO_INCREMENT for table `purchases`
---
-ALTER TABLE `purchases`
-  MODIFY `purchase_id` int(10) NOT NULL AUTO_INCREMENT;
-
---
 -- AUTO_INCREMENT for table `sales`
 --
 ALTER TABLE `sales`
-  MODIFY `sale_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
+  MODIFY `sale_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=21;
+
+--
+-- AUTO_INCREMENT for table `sales_items`
+--
+ALTER TABLE `sales_items`
+  MODIFY `item_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=24;
 
 --
 -- AUTO_INCREMENT for table `sale_items`
 --
 ALTER TABLE `sale_items`
-  MODIFY `item_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=14;
+  MODIFY `item_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
 -- AUTO_INCREMENT for table `staff_requests`
@@ -466,32 +368,8 @@ ALTER TABLE `staff_requests`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
--- AUTO_INCREMENT for table `suppliers`
---
-ALTER TABLE `suppliers`
-  MODIFY `supplier_id` int(10) NOT NULL AUTO_INCREMENT;
-
---
 -- Constraints for dumped tables
 --
-
---
--- Constraints for table `cart`
---
-ALTER TABLE `cart`
-  ADD CONSTRAINT `cart_ibfk_1` FOREIGN KEY (`medicine_id`) REFERENCES `medicines` (`medicine_id`);
-
---
--- Constraints for table `notifications`
---
-ALTER TABLE `notifications`
-  ADD CONSTRAINT `notifications_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`user_id`);
-
---
--- Constraints for table `orders`
---
-ALTER TABLE `orders`
-  ADD CONSTRAINT `orders_ibfk_1` FOREIGN KEY (`customer_id`) REFERENCES `customers` (`customer_id`);
 
 --
 -- Constraints for table `prescriptions`
@@ -500,10 +378,10 @@ ALTER TABLE `prescriptions`
   ADD CONSTRAINT `prescriptions_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`user_id`);
 
 --
--- Constraints for table `purchases`
+-- Constraints for table `sales_items`
 --
-ALTER TABLE `purchases`
-  ADD CONSTRAINT `purchases_ibfk_1` FOREIGN KEY (`supplier_id`) REFERENCES `suppliers` (`supplier_id`) ON DELETE CASCADE;
+ALTER TABLE `sales_items`
+  ADD CONSTRAINT `sales_items_ibfk_1` FOREIGN KEY (`sale_id`) REFERENCES `sales` (`sale_id`);
 
 --
 -- Constraints for table `sale_items`

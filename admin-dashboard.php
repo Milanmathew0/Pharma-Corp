@@ -74,13 +74,37 @@ $sales_labels = array();
 for ($i = 5; $i >= 0; $i--) {
     $month = date('Y-m', strtotime("-$i months"));
     $sales_labels[] = date('M', strtotime("-$i months"));
-    $result = $conn->query("SELECT SUM(total_amount) as sales FROM orders WHERE DATE_FORMAT(order_date, '%Y-%m') = '$month'");
-    if (!$result) {
-        error_log("Query failed for month $month: " . $conn->error);
+    
+    $query = "SELECT COALESCE(SUM(si.quantity * si.price_per_unit), 0) as sales 
+              FROM sales s 
+              JOIN sales_items si ON s.sale_id = si.sale_id 
+              WHERE DATE_FORMAT(s.sale_date, '%Y-%m') = ?";
+    
+    $stmt = $conn->prepare($query);
+    if ($stmt === false) {
+        error_log("Prepare failed: " . $conn->error);
         $sales_data[] = 0;
-    } else {
-        $sales_data[] = $result->fetch_assoc()['sales'] ?: 0;
+        continue;
     }
+    
+    $stmt->bind_param("s", $month);
+    if (!$stmt->execute()) {
+        error_log("Execute failed: " . $stmt->error);
+        $sales_data[] = 0;
+        continue;
+    }
+    
+    $result = $stmt->get_result();
+    if ($result === false) {
+        error_log("Get result failed: " . $stmt->error);
+        $sales_data[] = 0;
+        continue;
+    }
+    
+    $row = $result->fetch_assoc();
+    $sales_data[] = $row['sales'] ?: 0;
+    
+    $stmt->close();
 }
 
 $result = $conn->query("SELECT 
@@ -89,7 +113,7 @@ $result = $conn->query("SELECT
     SUM(CASE WHEN stock_quantity = 0 THEN 1 ELSE 0 END) as out_of_stock
     FROM Medicines");
 if (!$result) {
-    error_log("Inventory status query failed: " . $conn->error);
+    error_log("Inventory query failed: " . $conn->error);
     $inventory_status = [
         'in_stock' => 0,
         'low_stock' => 0,
@@ -272,6 +296,63 @@ if (!$result) {
         color: white;
         font-size: 0.7rem;
       }
+
+      .about-section {
+        background: linear-gradient(rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0.9)), url('pic/pattern.jpg');
+        background-size: cover;
+      }
+      
+      .feature-item {
+        padding: 20px;
+        background: white;
+        border-radius: 10px;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        transition: all 0.3s ease;
+      }
+      
+      .feature-item:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 25px rgba(44, 157, 183, 0.2);
+      }
+      
+      .about-image img {
+        transition: all 0.3s ease;
+      }
+      
+      .about-image img:hover {
+        transform: scale(1.02);
+      }
+      
+      .footer {
+        background: linear-gradient(rgba(0, 0, 0, 0.9), rgba(0, 0, 0, 0.9)), url('pic/footer-bg.jpg');
+        background-size: cover;
+      }
+      
+      .footer a {
+        text-decoration: none;
+        transition: all 0.3s ease;
+      }
+      
+      .footer a:hover {
+        color: var(--primary-color) !important;
+      }
+      
+      .social-links a {
+        display: inline-block;
+        width: 35px;
+        height: 35px;
+        line-height: 35px;
+        text-align: center;
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 50%;
+        margin-right: 10px;
+        transition: all 0.3s ease;
+      }
+      
+      .social-links a:hover {
+        background: var(--primary-color);
+        transform: translateY(-3px);
+      }
     </style>
   </head>
   <body>
@@ -288,63 +369,38 @@ if (!$result) {
         </button>
         <div class="collapse navbar-collapse" id="navbarNav">
           <ul class="navbar-nav ms-auto">
-            <li class="nav-item dropdown">
-              <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
-                Users Management
-              </a>
-              <ul class="dropdown-menu">
-                <li><a class="dropdown-item" href="admin-staff-requests.php">Staff Requests</a></li>
-                <li><a class="dropdown-item" href="admin-user-roles.php">Role Assignment</a></li>
-              </ul>
-            </li>
             <li class="nav-item">
               <a class="nav-link" href="inventory.php">
                 <i class="fas fa-boxes"></i> Inventory
               </a>
             </li>
-            <li class="nav-item dropdown">
-              <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
-                <i class="fas fa-chart-line"></i> Reports
+            <li class="nav-item">
+              <a class="nav-link" href="admin-staff-requests.php">
+                <i class="fas fa-users"></i> Staff Requests
               </a>
-              <ul class="dropdown-menu">
-                <li><a class="dropdown-item" href="inventory-report.php">Inventory Reports</a></li>
-                <li><a class="dropdown-item" href="sales-report.php">Sales Reports</a></li>
-                <li><a class="dropdown-item" href="profit-report.php">Profit Analysis</a></li>
-                <li><a class="dropdown-item" href="export-data.php">Export Data</a></li>
-              </ul>
             </li>
             <li class="nav-item">
-              <div class="position-relative d-inline-block">
-                <a class="nav-link" href="#notifications">
-                  <i class="fas fa-bell"></i>
-                  <span class="notification-badge">3</span>
-                </a>
-              </div>
-            </li>
-            <li class="nav-item dropdown">
-              <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
-                <i class="fas fa-user-circle"></i>
+              <a class="nav-link" href="admin-user-roles.php">
+                <i class="fas fa-user-shield"></i> Role Assignment
               </a>
-              <ul class="dropdown-menu">
-                <li><a class="dropdown-item" href="#profile">Profile</a></li>
-                <li><a class="dropdown-item" href="#settings">Settings</a></li>
-                <li><hr class="dropdown-divider"></li>
-                <li>
-    <a class="dropdown-item" href="#" onclick="logout()">Logout</a>
-</li>
-
-<script>
-function logout() {
-    if (confirm("Are you sure you want to logout?")) {
-        window.location.href = "logout.php";
-    }
-}
-</script>              </ul>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="#" onclick="logout()">
+                <i class="fas fa-sign-out-alt"></i> Logout
+              </a>
             </li>
           </ul>
         </div>
       </div>
     </nav>
+
+    <script>
+    function logout() {
+        if (confirm("Are you sure you want to logout?")) {
+            window.location.href = "logout.php";
+        }
+    }
+    </script>
 
     <section class="dashboard-header">
       <div class="container">
@@ -401,25 +457,7 @@ function logout() {
             </div>
           </div>
 
-        <div class="row">
-          <div class="col-xl-8">
-            <div class="feature-card">
-              <h3 class="text-primary mb-4">Sales Overview</h3>
-              <div class="chart-container">
-                <canvas id="salesChart"></canvas>
-              </div>
-            </div>
-          </div>
-          <div class="col-xl-4">
-            <div class="feature-card">
-              <h3 class="text-primary mb-4">Inventory Status</h3>
-              <div class="chart-container">
-                <canvas id="inventoryChart"></canvas>
-              </div>
-            </div>
-          </div>
-        </div>
-
+        
         <section class="activity-section">
           <div class="container">
             <div class="row">
@@ -461,10 +499,102 @@ function logout() {
       </div>
     </div>
 
+    <!-- About Section -->
+    <section class="about-section py-5 bg-light">
+      <div class="container">
+        <div class="row">
+          <div class="col-lg-6">
+            <h2 class="text-primary mb-4">About Pharma-Corp</h2>
+            <p class="lead">Your Trusted Pharmacy Management System</p>
+            <p>Pharma-Corp is a comprehensive pharmacy management system designed to streamline operations, manage inventory, and provide detailed analytics for your pharmacy business.</p>
+            <div class="row mt-4">
+              <div class="col-md-6">
+                <div class="feature-item mb-4">
+                  <i class="fas fa-chart-line text-primary fa-2x mb-3"></i>
+                  <h5>Real-time Analytics</h5>
+                  <p>Track sales, inventory, and business performance with detailed reports and visualizations.</p>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="feature-item mb-4">
+                  <i class="fas fa-boxes text-primary fa-2x mb-3"></i>
+                  <h5>Inventory Management</h5>
+                  <p>Efficiently manage your medicine stock with automated alerts and tracking.</p>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="feature-item mb-4">
+                  <i class="fas fa-users text-primary fa-2x mb-3"></i>
+                  <h5>User Management</h5>
+                  <p>Manage staff roles and permissions with a comprehensive user management system.</p>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="feature-item mb-4">
+                  <i class="fas fa-file-invoice text-primary fa-2x mb-3"></i>
+                  <h5>Sales Tracking</h5>
+                  <p>Monitor sales performance and generate detailed reports for better business decisions.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="col-lg-6">
+            <div class="about-image">
+              <img src="pic/7.jpg" alt="Pharmacy Management" class="img-fluid rounded shadow" style="width: 100%; height: auto; object-fit: cover;">
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer bg-dark text-white py-4">
+      <div class="container">
+        <div class="row">
+          <div class="col-md-4">
+            <h5>Pharma-Corp</h5>
+            <p>Your trusted partner in pharmacy management solutions.</p>
+            <div class="social-links">
+              <a href="#" class="text-white me-2"><i class="fab fa-facebook-f"></i></a>
+              <a href="#" class="text-white me-2"><i class="fab fa-twitter"></i></a>
+              <a href="#" class="text-white me-2"><i class="fab fa-linkedin-in"></i></a>
+            </div>
+          </div>
+          <div class="col-md-4">
+            <h5>Quick Links</h5>
+            <ul class="list-unstyled">
+              <li><a href="inventory.php" class="text-white">Inventory</a></li>
+              <li><a href="sales-report.php" class="text-white">Sales Reports</a></li>
+              <li><a href="admin-staff-requests.php" class="text-white">Staff Management</a></li>
+            </ul>
+          </div>
+          <div class="col-md-4">
+            <h5>Contact Us</h5>
+            <ul class="list-unstyled">
+              <li><i class="fas fa-phone me-2"></i></li>
+              <li><i class="fas fa-envelope me-2"></i> </li>
+              <li><i class="fas fa-map-marker-alt me-2"></i></li>
+            </ul>
+          </div>
+        </div>
+        <hr class="my-4">
+        <div class="row">
+          <div class="col-md-6">
+            <p class="mb-0">&copy; <?php echo date('Y'); ?> Pharma-Corp. All rights reserved.</p>
+          </div>
+          <div class="col-md-6 text-md-end">
+            <a href="#" class="text-white me-3">Privacy Policy</a>
+            <a href="#" class="text-white">Terms of Service</a>
+          </div>
+        </div>
+      </div>
+    </footer>
+
     <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.min.js"></script>
 
     <script>
+      // Sales Overview Chart
       const salesCtx = document.getElementById("salesChart").getContext("2d");
       new Chart(salesCtx, {
         type: "line",
@@ -472,26 +602,46 @@ function logout() {
           labels: <?php echo json_encode($sales_labels); ?>,
           datasets: [
             {
-              label: "Monthly Sales",
+              label: "Monthly Sales (₹)",
               data: <?php echo json_encode($sales_data); ?>,
               borderColor: "#2c9db7",
+              backgroundColor: "rgba(44, 157, 183, 0.1)",
               tension: 0.1,
+              fill: true
             },
           ],
         },
         options: {
           maintainAspectRatio: false,
+          responsive: true,
+          plugins: {
+            legend: {
+              display: true,
+              position: 'top'
+            },
+            tooltip: {
+              callbacks: {
+                label: function(context) {
+                  return '₹' + context.raw.toLocaleString('en-IN');
+                }
+              }
+            }
+          },
           scales: {
             y: {
               beginAtZero: true,
-            },
-          },
+              ticks: {
+                callback: function(value) {
+                  return '₹' + value.toLocaleString('en-IN');
+                }
+              }
+            }
+          }
         },
       });
 
-      const inventoryCtx = document
-        .getElementById("inventoryChart")
-        .getContext("2d");
+      // Inventory Status Chart
+      const inventoryCtx = document.getElementById("inventoryChart").getContext("2d");
       new Chart(inventoryCtx, {
         type: "doughnut",
         data: {
@@ -504,11 +654,30 @@ function logout() {
                 <?php echo $inventory_status['out_of_stock']; ?>
               ],
               backgroundColor: ["#2c9db7", "#f6c23e", "#e74a3b"],
+              borderWidth: 1
             },
           ],
         },
         options: {
           maintainAspectRatio: false,
+          responsive: true,
+          plugins: {
+            legend: {
+              display: true,
+              position: 'right'
+            },
+            tooltip: {
+              callbacks: {
+                label: function(context) {
+                  const label = context.label || '';
+                  const value = context.raw || 0;
+                  const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                  const percentage = Math.round((value / total) * 100);
+                  return `${label}: ${value} (${percentage}%)`;
+                }
+              }
+            }
+          }
         },
       });
     </script>

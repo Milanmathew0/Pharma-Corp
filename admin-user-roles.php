@@ -8,7 +8,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['user_id']) && isset($_
     
     error_log("POST data received: " . print_r($_POST, true));
     
-    if (!empty($user_id) && in_array($new_role, ['staff', 'manager'])) {
+    if (!empty($user_id) && in_array($new_role, ['staff', 'manager', 'customer'])) {
         $check_sql = "SELECT role FROM users WHERE user_id = '$user_id'";
         $check_result = $conn->query($check_sql);
         error_log("Check query: " . $check_sql);
@@ -111,6 +111,7 @@ if ($result) {
                                         <select name="new_role" class="form-select form-select-sm d-inline-block w-auto me-2">
                                             <option value="staff" <?php echo $user['role'] === 'staff' ? 'selected' : ''; ?>>Staff</option>
                                             <option value="manager" <?php echo $user['role'] === 'manager' ? 'selected' : ''; ?>>Manager</option>
+                                            <option value="customer" <?php echo $user['role'] === 'customer' ? 'selected' : ''; ?>>Customer</option>
                                         </select>
                                         <button type="submit" class="btn btn-warning btn-sm">
                                             <i class="bi bi-arrow-repeat"></i>

@@ -14,14 +14,6 @@ if (!isset($_SESSION['username'])) {
 
 include "connect.php";
 
-// Add this near the top of the file, after include "connect.php"
-require_once 'vendor/autoload.php'; // Make sure to install pdfparser via composer
-use Smalot\PdfParser\Parser;
-use thiagoalessio\TesseractOCR\TesseractOCR;
-
-// Include the text extraction functionality
-require_once 'extract_text.php';
-
 // Clear the form submission flag when displaying the page
 if ($_SERVER["REQUEST_METHOD"] == "GET") {
     unset($_SESSION['form_submitted']);
@@ -362,40 +354,6 @@ header("Pragma: no-cache");
 
         
 
-        <!-- Notifications -->
-        <div class="card">
-            <div class="card-header">
-                <i class="fas fa-bell"></i>
-                <h2>Notifications</h2>
-            </div>
-            <div class="card-content">
-                <ul class="notification-list">
-                    <li class="new-notification">
-                        <span>
-                            <i class="fas fa-clock"></i>
-                            Refill reminder: Your prescription for Metformin is due
-                        </span>
-                        <small>Just now</small>
-                    </li>
-                    <li>
-                        <span>
-                            <i class="fas fa-check-circle"></i>
-                            Your requested medicine Amoxicillin is now available
-                        </span>
-                        <small>2h ago</small>
-                    </li>
-                    <li>
-                        <span>
-                            <i class="fas fa-info-circle"></i>
-                            New stock alert: Vitamin C supplements are back in stock
-                        </span>
-                        <small>5h ago</small>
-                    </li>
-                </ul>
-            </div>
-        </div>
-        
-
        
 
         <!-- Profile Management -->
@@ -405,28 +363,50 @@ header("Pragma: no-cache");
                 <h2>Available Medicines</h2>
             </div>
             <div class="card-content">
-                <div class="medicines-grid">
-                    <?php
-                        $query = "SELECT * FROM medicines";
-                        $result = $conn->query($query);
-                        
-                        if ($result) {
-                            while ($medicine = $result->fetch_assoc()) {
-                                // Determine icon based on medicine type or use a default
-                                $icon = 'pills'; // Default icon
+                <!-- Simple Search Form -->
+                <div class="p-3 bg-light border-bottom">
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-hover" id="medicinesTable">
+                        <thead class="table-primary">
+                            <tr>
+                                <th scope="col">#</th>
+                                <th scope="col">Medicine Name</th>
+                                <th scope="col">Stock</th>
+                                <th scope="col">Price per Unit</th>
+                                <th scope="col">Manufacturer</th>
+                                <th scope="col">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php
+                                $query = "SELECT * FROM medicines";
+                                $result = $conn->query($query);
+                                $counter = 1;
                                 
-                                echo '<div class="medicine-card">
-                                        <i class="fas fa-'. htmlspecialchars($icon) .'"></i>
-                                        <h3>'. htmlspecialchars($medicine['name']) .'</h3>
-                                        <p>Stock: '. htmlspecialchars($medicine['stock_quantity']) .'</p>
-                                       
-                                    </div>';
-                            }
-                            $result->free();
-                        } else {
-                            echo '<div class="alert alert-info">No medicines available at the moment.</div>';
-                        }
-                    ?>
+                                if ($result && $result->num_rows > 0) {
+                                    while ($medicine = $result->fetch_assoc()) {
+                                        $status_class = $medicine['stock_quantity'] > 10 ? 'success' : 
+                                                    ($medicine['stock_quantity'] > 0 ? 'warning' : 'danger');
+                                        $status_text = $medicine['stock_quantity'] > 10 ? 'In Stock' : 
+                                                    ($medicine['stock_quantity'] > 0 ? 'Low Stock' : 'Out of Stock');
+                                        
+                                        echo '<tr>
+                                                <td>'. $counter++ .'</td>
+                                                <td>'. htmlspecialchars($medicine['name']) .'</td>
+                                                <td>'. htmlspecialchars($medicine['stock_quantity']) .'</td>
+                                                <td>₹'. number_format($medicine['price_per_unit'], 2) .'</td>
+                                                <td>'. htmlspecialchars($medicine['company']) .'</td>
+                                                <td><span class="badge bg-'. $status_class .'">'. $status_text .'</span></td>
+                                            </tr>';
+                                    }
+                                    $result->free();
+                                } else {
+                                    echo '<tr><td colspan="6" class="text-center">No medicines available at the moment.</td></tr>';
+                                }
+                            ?>
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </div>
@@ -485,21 +465,6 @@ header("Pragma: no-cache");
                                     <img id="previewImage" src="" alt="Preview" style="max-width: 100%; max-height: 300px;">
                                 </div>
                             </div>
-                            <div class="mb-3" id="extractedTextContainer" style="display: none;">
-                                <label class="form-label">Prescription Details (Extracted from Upload)</label>
-                                <div id="extractedText" class="extracted-text-preview form-control" style="min-height: 100px; overflow-y: auto;"></div>
-                                <input type="hidden" id="prescription_details" name="prescription_details">
-                                <div id="manualEntryFallback" style="display: none;">
-                                    <div class="alert alert-warning mt-2">
-                                        <i class="fas fa-exclamation-triangle"></i> 
-                                        Text extraction failed. Please enter prescription details manually below.
-                                    </div>
-                                    <textarea class="form-control mt-2" id="manual_prescription_details" 
-                                        rows="4" placeholder="Please enter your prescription details manually"></textarea>
-                                    <button type="button" class="btn btn-sm btn-outline-primary mt-2" 
-                                        onclick="useManualEntry()">Use This Text</button>
-                                </div>
-                            </div>
                             <button type="submit" class="btn btn-primary">
                                 <i class="bi bi-file-earmark-medical"></i> Submit Prescription
                             </button>
@@ -519,8 +484,6 @@ header("Pragma: no-cache");
             const fileInput = document.getElementById('prescription_file');
             const previewImage = document.getElementById('previewImage');
             const filePreview = document.getElementById('filePreview');
-            const extractedTextContainer = document.getElementById('extractedTextContainer');
-            const extractedText = document.getElementById('extractedText');
             const uploadProgress = document.getElementById('uploadProgress');
             
             if (fileInput.files && fileInput.files[0]) {
@@ -533,100 +496,16 @@ header("Pragma: no-cache");
                     reader.onload = function(e) {
                         previewImage.src = e.target.result;
                         filePreview.style.display = 'block';
-                        
-                        // Now extract text from the image
-                        extractTextFromImage(file);
                     };
                     
                     reader.readAsDataURL(file);
-                } else if (file.type === 'application/pdf') {
-                    // For PDFs, don't show image preview but still try text extraction
-                    filePreview.style.display = 'none';
-                    extractTextFromImage(file);
                 } else {
-                    // For other file types, don't show preview or extract text
+                    // For non-image files (like PDF), don't show preview
                     filePreview.style.display = 'none';
-                    extractedTextContainer.style.display = 'none';
                 }
             } else {
                 filePreview.style.display = 'none';
-                extractedTextContainer.style.display = 'none';
             }
-        }
-        
-        function extractTextFromImage(file) {
-            const formData = new FormData();
-            formData.append('prescription_file', file);
-            
-            const progressBar = document.querySelector('#uploadProgress .progress-bar');
-            const uploadProgress = document.getElementById('uploadProgress');
-            const extractedTextContainer = document.getElementById('extractedTextContainer');
-            const extractedText = document.getElementById('extractedText');
-            const prescriptionDetails = document.getElementById('prescription_details');
-            const manualEntryFallback = document.getElementById('manualEntryFallback');
-            
-            uploadProgress.style.display = 'block';
-            progressBar.style.width = '0%';
-            
-            $.ajax({
-                url: 'extract_text.php',
-                type: 'POST',
-                data: formData,
-                processData: false,
-                contentType: false,
-                xhr: function() {
-                    const xhr = new window.XMLHttpRequest();
-                    xhr.upload.addEventListener('progress', function(e) {
-                        if (e.lengthComputable) {
-                            const percent = Math.round((e.loaded / e.total) * 100);
-                            progressBar.style.width = percent + '%';
-                            progressBar.setAttribute('aria-valuenow', percent);
-                        }
-                    });
-                    return xhr;
-                },
-                success: function(response) {
-                    uploadProgress.style.display = 'none';
-                    console.log("Received response:", response);
-                    
-                    try {
-                        const result = JSON.parse(response);
-                        if (result.success && result.extractedText) {
-                            extractedText.textContent = result.extractedText;
-                            prescriptionDetails.value = result.extractedText;
-                            extractedTextContainer.style.display = 'block';
-                            manualEntryFallback.style.display = 'none';
-                        } else {
-                            console.error('Text extraction failed:', result.message);
-                            extractedText.textContent = 'Text extraction failed. Please enter details manually below.';
-                            extractedTextContainer.style.display = 'block';
-                            manualEntryFallback.style.display = 'block';
-                        }
-                    } catch (e) {
-                        console.error('Invalid JSON response:', response, e);
-                        extractedText.textContent = 'Error processing the image. Please enter details manually.';
-                        extractedTextContainer.style.display = 'block';
-                        manualEntryFallback.style.display = 'block';
-                    }
-                },
-                error: function(xhr, status, error) {
-                    uploadProgress.style.display = 'none';
-                    extractedText.textContent = 'Error uploading the image. Please enter details manually.';
-                    extractedTextContainer.style.display = 'block';
-                    manualEntryFallback.style.display = 'block';
-                    console.error('AJAX Error:', status, error, xhr.responseText);
-                }
-            });
-        }
-        
-        function useManualEntry() {
-            const manualText = document.getElementById('manual_prescription_details').value;
-            const extractedText = document.getElementById('extractedText');
-            const prescriptionDetails = document.getElementById('prescription_details');
-            
-            extractedText.textContent = manualText;
-            prescriptionDetails.value = manualText;
-            document.getElementById('manualEntryFallback').style.display = 'none';
         }
         
         $(document).ready(function() {
@@ -634,12 +513,6 @@ header("Pragma: no-cache");
                 e.preventDefault();
                 
                 const formData = new FormData(this);
-                
-                // Add extracted text if available
-                const extractedText = document.getElementById('extractedText');
-                if (extractedText.textContent.trim() !== '') {
-                    formData.append('extracted_text', extractedText.textContent);
-                }
                 
                 $.ajax({
                     url: 'submit_prescription.php',
@@ -656,7 +529,6 @@ header("Pragma: no-cache");
                                 alert(result.message);
                                 $('#prescriptionForm')[0].reset();
                                 $('#filePreview').hide();
-                                $('#extractedTextContainer').hide();
                             } else {
                                 alert('Error: ' + result.message);
                             }
@@ -666,7 +538,6 @@ header("Pragma: no-cache");
                                 alert('Prescription submitted successfully!');
                                 $('#prescriptionForm')[0].reset();
                                 $('#filePreview').hide();
-                                $('#extractedTextContainer').hide();
                             } else {
                                 alert('Error processing your request. Please try again.');
                             }
@@ -679,6 +550,52 @@ header("Pragma: no-cache");
                 });
             });
         });
+
+        function searchMedicines() {
+            const searchName = document.getElementById('searchName').value.trim();
+            const medicinesTable = document.getElementById('medicinesTable').getElementsByTagName('tbody')[0];
+            
+            // Clear previous results
+            medicinesTable.innerHTML = '';
+
+            if (searchName === '') {
+                alert('Please enter a medicine name to search.');
+                return;
+            }
+
+            $.ajax({
+                url: 'search_medicines.php', // Ensure this endpoint is set up to handle search queries
+                type: 'GET',
+                data: { name: searchName },
+                success: function(response) {
+                    try {
+                        const results = JSON.parse(response);
+                        if (results.length > 0) {
+                            results.forEach((medicine, index) => {
+                                const row = medicinesTable.insertRow();
+                                row.innerHTML = `
+                                    <td>${index + 1}</td>
+                                    <td>${medicine.name}</td>
+                                    <td>${medicine.stock_quantity}</td>
+                                    <td>₹${medicine.price_per_unit.toFixed(2)}</td>
+                                    <td>${medicine.company}</td>
+                                    <td><span class="badge bg-${medicine.stock_quantity > 10 ? 'success' : (medicine.stock_quantity > 0 ? 'warning' : 'danger')}">${medicine.stock_quantity > 10 ? 'In Stock' : (medicine.stock_quantity > 0 ? 'Low Stock' : 'Out of Stock')}</span></td>
+                                `;
+                            });
+                        } else {
+                            medicinesTable.innerHTML = '<tr><td colspan="6" class="text-center">No medicines found.</td></tr>';
+                        }
+                    } catch (e) {
+                        console.error('Error parsing response:', e);
+                        medicinesTable.innerHTML = '<tr><td colspan="6" class="text-center">Error processing search results.</td></tr>';
+                    }
+                },
+                error: function(xhr, status, error) {
+                    console.error('AJAX Error:', status, error);
+                    medicinesTable.innerHTML = '<tr><td colspan="6" class="text-center">Error fetching search results.</td></tr>';
+                }
+            });
+        }
     </script>
 </body>
 </html>

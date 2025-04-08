@@ -507,12 +507,7 @@ $pending_count = $pending_count_result->fetch_assoc()['count'];
                 <!-- Inventory Tab -->
                 <div class="tab-pane fade show active" id="inventory" role="tabpanel" aria-labelledby="inventory-tab">
                     <div class="feature-card">
-                        <div class="d-flex justify-content-between align-items-center mb-4">
-                            <h3 class="text-primary mb-0">Medicine Inventory</h3>
-                            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addMedicineModal">
-                                <i class="fas fa-plus"></i> Add New Medicine
-                            </button>
-                        </div>
+                       
 
                         <!-- Add custom search container -->
                         <div class="custom-search-container">
